@@ -173,12 +173,12 @@ html.ll-loader-reveal .ll-h.ll-in {
 }
 
 /* Logo: dukker opp tynn og vokser til full tykkelse (strek i bakgrunnsfargen "spiser" av formen) */
-html.ll-loader-reveal .header__logo svg:not(.ll-wordmark) { opacity: 0; transition: opacity 250ms ease-out; }
+html.ll-loader-reveal .header__logo svg { opacity: 0; transition: opacity 250ms ease-out; }
 html.ll-loader-reveal .header__logo svg g path {
   stroke: var(--ll-logo-bg, var(--ll-bg)); stroke-width: var(--ll-logo-erode);
   transition: stroke-width 450ms var(--ll-r-ease) 100ms;
 }
-html.ll-done.ll-loader-reveal .header__logo svg:not(.ll-wordmark) { opacity: 1; }
+html.ll-done.ll-loader-reveal .header__logo svg { opacity: 1; }
 html.ll-done.ll-loader-reveal .header__logo svg g path { stroke-width: 0; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -186,28 +186,35 @@ html.ll-done.ll-loader-reveal .header__logo svg g path { stroke-width: 0; }
   html.ll-loader-reveal .ll-r.ll-row { transform: none; }
 }
 
-/* ---------- Delayed header (?header=delayed) ----------
-   Ved scroll toner logoen ut og navnetrekket inn (ingen bevegelse, ingen bakgrunn).
-   Headeren blir stående til man har scrollet forbi HDR_HOLD (loader.js), og glir så opp.
-   Kommer ikke tilbake ved scroll opp – bare når man er tilbake nær toppen. */
-:root { --ll-hdr-h: 164px; --ll-hdr-ease: cubic-bezier(.2,.7,.2,1); --ll-hdr-fade: 300ms; }
-html.ll-hdr .header-menu-new { height: var(--ll-hdr-h); }
-html.ll-hdr .header-menu-new > .header {
-  position: fixed; top: 0; left: 0; right: 0; background: transparent;
-  transition: transform 450ms var(--ll-hdr-ease);
+/* ---------- Hover på kort (?hover=tilt|tight|none) ----------
+   Kort: .ulc-item (Fra utstillingene), .promo-card, .theme-card. Sidens egen bilde-zoom (scale 1.03) slås av. */
+:root {
+  --ll-hover-duration: 500ms; --ll-hover-ease: cubic-bezier(.2,.7,.2,1);
+  --ll-tilt-lift: -6px; --ll-tilt-rotate: -1deg;   /* tilt */
+  --ll-tight-inset: 10px;                          /* tight */
 }
-html.ll-hdr.ll-hdr-hidden .header-menu-new > .header { transform: translateY(-100%); }
+html.ll-hover-tilt :is(.ulc-item, .promo-card, .theme-card):hover img,
+html.ll-hover-tight :is(.ulc-item, .promo-card, .theme-card):hover img { scale: 1 !important; }
 
-html.ll-hdr .header__logo svg { will-change: opacity; transition: opacity var(--ll-hdr-fade) ease-out; }
-html.ll-hdr.ll-hdr-compact .header__logo svg { opacity: 0 !important; }
-
-/* Navnetrekket ligger i <body> (utenfor Vue), fast plassert oppå logoen og følger headeren opp */
-html.ll-hdr .ll-wordmark {
-  position: fixed; z-index: 1001; top: calc(var(--ll-wm-top, 32px) + 4px); left: var(--ll-wm-left, 48px);
-  height: 24px; width: auto; color: #000; opacity: 0; pointer-events: none; will-change: opacity, transform;
-  transition: opacity var(--ll-hdr-fade) ease-out, transform 450ms var(--ll-hdr-ease);
+/* 1. Tilt: hele kortet (bilde + tekst) løftes og vippes litt opp.
+   translate/rotate (ikke transform) så det ikke kolliderer med reveal-animasjonen.
+   Transition-listen tar med reveal sine egenskaper, siden den overstyrer den. */
+html.ll-hover-tilt :is(.ulc-item, .promo-card, .theme-card) {
+  transition: opacity var(--ll-row-duration) ease-out, transform var(--ll-row-duration) var(--ll-r-ease),
+              translate var(--ll-hover-duration) var(--ll-hover-ease), rotate var(--ll-hover-duration) var(--ll-hover-ease) !important;
 }
-html.ll-hdr .ll-wordmark path { fill: currentColor !important; } /* footer-kopien er hvit */
-html.ll-hdr.ll-hdr-compact .ll-wordmark { opacity: 1; }
-html.ll-hdr.ll-hdr-hidden .ll-wordmark { transform: translateY(calc(-1 * var(--ll-hdr-h))); }
-html:not(.ll-hdr) .ll-wordmark { display: none; }
+html.ll-hover-tilt :is(.ulc-item, .promo-card, .theme-card):hover {
+  translate: 0 var(--ll-tilt-lift); rotate: var(--ll-tilt-rotate);
+}
+
+/* 2. Tight: kanten går litt inn i bildet */
+html.ll-hover-tight :is(.ulc-item__image, .promo-card__image, .theme-card__image) {
+  clip-path: inset(0); transition: clip-path var(--ll-hover-duration) var(--ll-hover-ease);
+}
+html.ll-hover-tight :is(.ulc-item, .promo-card, .theme-card):hover :is(.ulc-item__image, .promo-card__image, .theme-card__image) {
+  clip-path: inset(var(--ll-tight-inset));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.ll-hover-tilt :is(.ulc-item, .promo-card, .theme-card):hover { translate: none; rotate: none; }
+}

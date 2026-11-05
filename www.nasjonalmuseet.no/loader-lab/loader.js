@@ -17,9 +17,8 @@
   var t0 = performance.now();
   var html = document.documentElement;
 
-  var header = store.get('header', 'delayed');
-  html.classList.add('ll-loading', 'll-loader-' + loader, 'll-img-' + img);
-  if (header === 'delayed') html.classList.add('ll-hdr');
+  var hover = store.get('hover', 'tilt');
+  html.classList.add('ll-loading', 'll-loader-' + loader, 'll-img-' + img, 'll-hover-' + hover);
   if (q.get('headline')) html.classList.add('ll-headline');
 
   /* --- falsk progress for "bar" --- */
@@ -127,37 +126,6 @@
     els.forEach(function (el) { io.observe(el); });
   }
 
-  /* --- delayed header: logo → navnetrekk ved scroll, blir stående litt, glir så opp --- */
-  var HDR_COMPACT = 10, HDR_HOLD = 240;
-  function setupHeader() {
-    var hdr = document.querySelector('.header-menu-new > .header');
-    if (!hdr) return;
-    html.style.setProperty('--ll-hdr-h', hdr.offsetHeight + 'px');
-    var logoA = document.querySelector('.header__logo a');
-    var foot = document.querySelector('.footer-new__logo svg');
-    if (logoA && foot) {
-      // Utenfor Vue-treet (ellers hydration mismatch), plassert oppå logoen
-      var wm = foot.cloneNode(true);
-      wm.classList.add('ll-wordmark');
-      wm.setAttribute('aria-hidden', 'true');
-      document.body.appendChild(wm);
-      var place = function () {
-        var r = logoA.getBoundingClientRect();
-        html.style.setProperty('--ll-wm-top', r.top + 'px');
-        html.style.setProperty('--ll-wm-left', r.left + 'px');
-      };
-      place();
-      window.addEventListener('resize', place);
-    }
-    function onScroll() {
-      var y = Math.max(0, window.scrollY);
-      html.classList.toggle('ll-hdr-compact', y > HDR_COMPACT);
-      html.classList.toggle('ll-hdr-hidden', y > HDR_HOLD);
-    }
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-  }
-
   if (loader === 'title' || loader === 'reveal') {
     // Ikke vent på alle bildene: vis siden når HTML-en er klar og den variable fonten er lastet.
     document.addEventListener('DOMContentLoaded', function () {
@@ -193,7 +161,6 @@
   }
   function cookie(k) { var m = document.cookie.match('(?:^|; )ll_' + k + '=(\\d+)'); return m ? m[1] : '0'; }
   document.addEventListener('DOMContentLoaded', function () {
-    if (header === 'delayed') setupHeader();
     document.querySelectorAll('img').forEach(track);
     var d = document.createElement('div');
     d.id = 'll-panel';
@@ -202,7 +169,7 @@
       '<div class="ll-title">Loader lab <span id="ll-toggle">–</span></div>' +
       '<label>Side-loader <select id="ll-loader">' + opt(['reveal', 'title', 'spinner', 'dots', 'bar', 'fade', 'curtain', 'weight', 'none'], loader) + '</select></label>' +
       '<label>Bilder <select id="ll-img-sel">' + opt(['fade', 'blur', 'skeleton', 'none'], img) + '</select></label>' +
-      '<label>Header <select id="ll-header">' + opt(['delayed', 'original'], header) + '</select></label>' +
+      '<label>Hover <select id="ll-hover">' + opt(['tilt', 'tight', 'none'], hover) + '</select></label>' +
       '<label>Min. tid (ms) <input id="ll-min" type="number" step="100" value="' + min + '"></label>' +
       '<label>Delay alt (ms) <input id="ll-delay" type="number" step="100" value="' + (q.get('delay') || cookie('delay')) + '"></label>' +
       '<label>Delay bilder (ms) <input id="ll-imgdelay" type="number" step="250" value="' + (q.get('imgdelay') || cookie('imgdelay')) + '"></label>' +
@@ -215,9 +182,9 @@
     document.getElementById('ll-reload').onclick = function () {
       var v = function (id) { return document.getElementById(id).value; };
       store.set('loader', v('ll-loader')); store.set('img', v('ll-img-sel')); store.set('min', v('ll-min'));
-      store.set('header', v('ll-header'));
+      store.set('hover', v('ll-hover'));
       var u = new URL(location.href);
-      ['loader', 'img', 'min', 'header'].forEach(function (k) { u.searchParams.delete(k); });
+      ['loader', 'img', 'min', 'hover'].forEach(function (k) { u.searchParams.delete(k); });
       u.searchParams.set('delay', v('ll-delay') || '0');
       u.searchParams.set('imgdelay', v('ll-imgdelay') || '0');
       location.href = u.toString();
