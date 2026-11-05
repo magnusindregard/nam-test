@@ -1,0 +1,213 @@
+/* ===== Loader lab – rediger fritt =====
+   Side-loader styres av klasse på <html>:  ll-loading + ll-loader-<navn>
+   Bilde-effekt styres av klasse på <html>: ll-img-<navn>
+*/
+:root {
+  --ll-bg: #fff;
+  --ll-fg: #000;
+  --ll-accent: #e4002b;
+  --ll-duration: 600ms;
+}
+
+/* ---------- Side-loaders ---------- */
+html.ll-loading::after,
+html.ll-loading::before { content: ""; position: fixed; z-index: 2147483646; pointer-events: none; }
+
+/* Overlay for alle varianter (fjernes med fade når ll-loading fjernes) */
+html.ll-loader-spinner::after,
+html.ll-loader-dots::after,
+html.ll-loader-curtain::after { inset: 0; background: var(--ll-bg); transition: opacity var(--ll-duration); }
+html.ll-done.ll-loader-spinner::after,
+html.ll-done.ll-loader-dots::after { content: ""; position: fixed; inset: 0; z-index: 2147483646; background: var(--ll-bg); opacity: 0; pointer-events: none; transition: opacity var(--ll-duration); }
+
+/* spinner */
+html.ll-loading.ll-loader-spinner::before {
+  top: 50%; left: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; z-index: 2147483647;
+  border: 3px solid rgba(0,0,0,.12); border-top-color: var(--ll-fg); border-radius: 50%;
+  animation: ll-spin .8s linear infinite;
+}
+@keyframes ll-spin { to { transform: rotate(360deg); } }
+
+/* tre prikker */
+html.ll-loading.ll-loader-dots::before {
+  top: 50%; left: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; z-index: 2147483647; border-radius: 50%;
+  background: var(--ll-fg); box-shadow: -22px 0 var(--ll-fg), 22px 0 var(--ll-fg);
+  animation: ll-dots 1s ease-in-out infinite;
+}
+@keyframes ll-dots {
+  0%, 100% { box-shadow: -22px 0 var(--ll-fg), 22px 0 rgba(0,0,0,.15); background: rgba(0,0,0,.4); }
+  50% { box-shadow: -22px 0 rgba(0,0,0,.15), 22px 0 var(--ll-fg); background: var(--ll-fg); }
+}
+
+/* progress-bar øverst (ingen overlay – siden vises mens den laster) */
+html.ll-loader-bar::before {
+  content: ""; position: fixed; z-index: 2147483647; top: 0; left: 0; height: 3px;
+  width: var(--ll-progress, 0%); background: var(--ll-accent);
+  transition: width .3s ease, opacity .4s ease .3s; pointer-events: none;
+}
+html.ll-done.ll-loader-bar::before { width: 100%; opacity: 0; }
+
+/* gardin som glir opp */
+html.ll-done.ll-loader-curtain::after {
+  content: ""; position: fixed; inset: 0; z-index: 2147483646; background: var(--ll-fg);
+  transform: translateY(-100%); transition: transform 900ms cubic-bezier(.77,0,.18,1); pointer-events: none;
+}
+html.ll-loading.ll-loader-curtain::after { background: var(--ll-fg); }
+html.ll-loading.ll-loader-curtain::before {
+  top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2147483647;
+  content: "Nasjonalmuseet"; color: var(--ll-bg); font: 600 22px/1 sans-serif; letter-spacing: .02em;
+  animation: ll-pulse 1.2s ease-in-out infinite;
+}
+@keyframes ll-pulse { 50% { opacity: .35; } }
+
+/* innhold toner inn */
+html.ll-loader-fade body { transition: opacity var(--ll-duration) ease, transform var(--ll-duration) ease; }
+html.ll-loading.ll-loader-fade body { opacity: 0; transform: translateY(12px); }
+
+/* ---------- Bilde-effekter ---------- */
+html.ll-img-fade img.ll-img { opacity: 0; transition: opacity 500ms ease; }
+html.ll-img-fade img.ll-img.ll-loaded { opacity: 1; }
+
+html.ll-img-blur img.ll-img { filter: blur(18px); transform: scale(1.04); opacity: .4; transition: filter 700ms ease, transform 700ms ease, opacity 400ms; }
+html.ll-img-blur img.ll-img.ll-loaded { filter: none; transform: none; opacity: 1; }
+
+html.ll-img-skeleton img.ll-img:not(.ll-loaded) {
+  color: transparent;
+  background: linear-gradient(100deg, #eee 30%, #f8f8f8 50%, #eee 70%) 0 0 / 300% 100%;
+  animation: ll-shimmer 1.4s linear infinite;
+}
+html.ll-img-skeleton img.ll-img.ll-loaded { animation: ll-reveal 400ms ease; }
+@keyframes ll-shimmer { from { background-position: 100% 0; } to { background-position: -50% 0; } }
+@keyframes ll-reveal { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---------- Kontrollpanel ---------- */
+#ll-panel {
+  position: fixed; right: 12px; bottom: 12px; z-index: 2147483647;
+  background: #111; color: #fff; font: 12px/1.4 system-ui, sans-serif;
+  padding: 10px 12px; border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,.3);
+  display: grid; gap: 6px; min-width: 190px;
+}
+#ll-panel label { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+#ll-panel select, #ll-panel input { font: inherit; width: 95px; }
+#ll-panel button { font: inherit; cursor: pointer; padding: 4px; }
+#ll-panel .ll-title { font-weight: 600; display: flex; justify-content: space-between; }
+#ll-panel .ll-title span { cursor: pointer; opacity: .6; }
+#ll-panel.ll-min > :not(.ll-title) { display: none; }
+#ll-panel .ll-time { opacity: .7; }
+#ll-panel * { font: 12px/1.4 system-ui, sans-serif !important; color: inherit; letter-spacing: 0; }
+#ll-panel select, #ll-panel input, #ll-panel button { color: #111 !important; background: #fff; border: 1px solid #555; border-radius: 4px; padding: 2px 4px; height: auto; }
+#ll-panel .ll-title { font-weight: 600 !important; }
+
+/* ---------- Variabel font: vekt-animasjon (wght 300 → 500) ----------
+   Egen @font-face med vekt-område – originalen deklarerer bare 400, og da
+   kan ikke font-weight animeres. font-variation-settings ville også fungert. */
+@font-face {
+  font-family: "MuseetSansVF-lab";
+  src: url(/dist/fonts/MuseetSansTextVFfd038091f5fd9cc2.woff2) format("woff2");
+  font-weight: 300 900;
+  font-display: block;
+}
+:root { --ll-wght-from: 300; --ll-wght-to: 500; }
+
+/* Side-loader: ordet "pulserer" mellom tynn og medium */
+html.ll-loading.ll-loader-weight::after { inset: 0; background: var(--ll-bg); }
+html.ll-done.ll-loader-weight::after { content: ""; position: fixed; inset: 0; z-index: 2147483646; background: var(--ll-bg); opacity: 0; pointer-events: none; transition: opacity var(--ll-duration); }
+html.ll-loading.ll-loader-weight::before {
+  content: "Nasjonalmuseet"; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2147483647;
+  font-family: "MuseetSansVF-lab", sans-serif; font-size: clamp(32px, 6vw, 72px); color: var(--ll-fg);
+  font-weight: var(--ll-wght-from);
+  animation: ll-wght 1.4s ease-in-out infinite alternate;
+}
+@keyframes ll-wght {
+  from { font-weight: var(--ll-wght-from); }
+  to   { font-weight: var(--ll-wght-to); }
+}
+
+/* Ekstra: overskriftene går fra tynn til medium når siden er ferdig lastet (?loader=weight eller ?headline=1) */
+html.ll-loader-weight h1, html.ll-headline h1 {
+  font-family: "MuseetSansVF-lab", sans-serif !important;
+  font-weight: var(--ll-wght-from);
+  transition: font-weight 1.2s cubic-bezier(.2,.7,.2,1);
+}
+html.ll-done.ll-loader-weight h1, html.ll-done.ll-headline h1 { font-weight: var(--ll-wght-to); }
+
+/* ---------- title: hvit side til innholdet er klart, så går tittelen fra tynn til medium ----------
+   MuseetSansVF har vekt-akse 300–900, så 300 er det tynneste som finnes. */
+:root { --ll-title-from: 300; --ll-title-to: 500; --ll-title-duration: 1.2s; --ll-title-ease: cubic-bezier(.2,.7,.2,1); }
+html.ll-loading.ll-loader-title body { visibility: hidden; }
+html.ll-loading.ll-loader-title #ll-panel { visibility: visible; }
+html.ll-loader-title h1 {
+  font-family: "MuseetSansVF-lab", sans-serif !important;
+  font-weight: var(--ll-title-from);
+  transition: font-weight var(--ll-title-duration) var(--ll-title-ease);
+}
+html.ll-done.ll-loader-title h1 { font-weight: var(--ll-title-to); }
+
+/* ---------- reveal: logoen tegnes inn, så toner blokkene inn én etter én nedover ----------
+   Blokker får .ll-r (og .ll-in når de vises), overskrifter .ll-h med faktisk vekt i --ll-w. */
+:root { --ll-r-duration: 350ms; --ll-r-ease: cubic-bezier(.2,.7,.2,1);
+        --ll-h-duration: 1s; --ll-logo-erode: 4; }
+html.ll-loading.ll-loader-reveal body { visibility: hidden; }
+html.ll-loading.ll-loader-reveal #ll-panel { visibility: visible; }
+
+/* Hvitt (usynlig) til klar, så bare fade. Overgangen gjelder bare inn – skjulingen skjer momentant. */
+html.ll-loader-reveal .ll-r { opacity: 0; transition: none; }
+html.ll-loader-reveal .ll-r.ll-in { opacity: 1; transition: opacity var(--ll-r-duration) ease-out; }
+
+/* Kort på samme rad: samtidig, fade + litt nedenfra og opp */
+:root { --ll-row-shift: 12px; --ll-row-duration: 500ms; }
+html.ll-loader-reveal .ll-r.ll-row { transform: translateY(var(--ll-row-shift)); }
+html.ll-loader-reveal .ll-r.ll-row.ll-in {
+  transform: none;
+  transition: opacity var(--ll-row-duration) ease-out, transform var(--ll-row-duration) var(--ll-r-ease);
+}
+
+html.ll-loader-reveal .ll-h {
+  font-family: "MuseetSansVF-lab", sans-serif !important;
+  font-weight: 300 !important;
+  transition: none;
+}
+html.ll-loader-reveal .ll-h.ll-in {
+  font-weight: var(--ll-w, 500) !important;
+  transition: font-weight var(--ll-h-duration) var(--ll-r-ease), opacity var(--ll-r-duration) ease-out;
+}
+
+/* Logo: dukker opp tynn og vokser til full tykkelse (strek i bakgrunnsfargen "spiser" av formen) */
+html.ll-loader-reveal .header__logo svg:not(.ll-wordmark) { opacity: 0; transition: opacity 250ms ease-out; }
+html.ll-loader-reveal .header__logo svg g path {
+  stroke: var(--ll-logo-bg, var(--ll-bg)); stroke-width: var(--ll-logo-erode);
+  transition: stroke-width 450ms var(--ll-r-ease) 100ms;
+}
+html.ll-done.ll-loader-reveal .header__logo svg:not(.ll-wordmark) { opacity: 1; }
+html.ll-done.ll-loader-reveal .header__logo svg g path { stroke-width: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  html.ll-loader-reveal .ll-r, html.ll-loader-reveal .ll-h { transition-duration: 1ms; }
+  html.ll-loader-reveal .ll-r.ll-row { transform: none; }
+}
+
+/* ---------- Delayed header (?header=delayed) ----------
+   Ved scroll toner logoen ut og navnetrekket inn (ingen bevegelse, ingen bakgrunn).
+   Headeren blir stående til man har scrollet forbi HDR_HOLD (loader.js), og glir så opp.
+   Kommer ikke tilbake ved scroll opp – bare når man er tilbake nær toppen. */
+:root { --ll-hdr-h: 164px; --ll-hdr-ease: cubic-bezier(.2,.7,.2,1); --ll-hdr-fade: 300ms; }
+html.ll-hdr .header-menu-new { height: var(--ll-hdr-h); }
+html.ll-hdr .header-menu-new > .header {
+  position: fixed; top: 0; left: 0; right: 0; background: transparent;
+  transition: transform 450ms var(--ll-hdr-ease);
+}
+html.ll-hdr.ll-hdr-hidden .header-menu-new > .header { transform: translateY(-100%); }
+
+html.ll-hdr .header__logo svg { will-change: opacity; transition: opacity var(--ll-hdr-fade) ease-out; }
+html.ll-hdr.ll-hdr-compact .header__logo svg { opacity: 0 !important; }
+
+/* Navnetrekket ligger i <body> (utenfor Vue), fast plassert oppå logoen og følger headeren opp */
+html.ll-hdr .ll-wordmark {
+  position: fixed; z-index: 1001; top: calc(var(--ll-wm-top, 32px) + 4px); left: var(--ll-wm-left, 48px);
+  height: 24px; width: auto; color: #000; opacity: 0; pointer-events: none; will-change: opacity, transform;
+  transition: opacity var(--ll-hdr-fade) ease-out, transform 450ms var(--ll-hdr-ease);
+}
+html.ll-hdr .ll-wordmark path { fill: currentColor !important; } /* footer-kopien er hvit */
+html.ll-hdr.ll-hdr-compact .ll-wordmark { opacity: 1; }
+html.ll-hdr.ll-hdr-hidden .ll-wordmark { transform: translateY(calc(-1 * var(--ll-hdr-h))); }
+html:not(.ll-hdr) .ll-wordmark { display: none; }

@@ -1,0 +1,90 @@
+/* Loader lab – lastes synkront i <head> så loaderen vises før resten av siden.
+   URL-parametre:
+     ?loader=spinner|dots|bar|fade|curtain|none   (side-loader)
+     ?img=fade|blur|skeleton|none                  (bilde-effekt)
+     ?min=600                                      (minimum visningstid i ms)
+     ?delay=ms&imgdelay=ms                         (kunstig forsinkelse fra serve.py)
+*/
+(function () {
+  var q = new URLSearchParams(location.search);
+  var store = {
+    get: function (k, d) { try { return q.get(k) || localStorage.getItem('ll_' + k) || d; } catch (e) { return q.get(k) || d; } },
+    set: function (k, v) { try { localStorage.setItem('ll_' + k, v); } catch (e) {} }
+  };
+  var loader = store.get('loader', 'spinner');
+  var img = store.get('img', 'fade');
+  var min = parseInt(store.get('min', '0'), 10) || 0;
+  var t0 = performance.now();
+  var html = document.documentElement;
+
+  html.classList.add('ll-loading', 'll-loader-' + loader, 'll-img-' + img);
+
+  /* --- falsk progress for "bar" --- */
+  var p = 0, timer = setInterval(function () {
+    p += (90 - p) * 0.08;
+    html.style.setProperty('--ll-progress', p.toFixed(1) + '%');
+  }, 120);
+
+  function done() {
+    var wait = Math.max(0, min - (performance.now() - t0));
+    setTimeout(function () {
+      clearInterval(timer);
+      html.classList.remove('ll-loading');
+      html.classList.add('ll-done');
+      var el = document.getElementById('ll-time');
+      if (el) el.textContent = 'load: ' + Math.round(performance.now() - t0) + ' ms';
+    }, wait);
+  }
+  window.addEventListener('load', done);
+
+  /* --- bilde-effekter --- */
+  function track(im) {
+    if (im.__ll) return; im.__ll = 1;
+    im.classList.add('ll-img');
+    var ok = function () { im.classList.add('ll-loaded'); };
+    if (im.complete && im.naturalWidth) ok();
+    else { im.addEventListener('load', ok); im.addEventListener('error', ok); }
+  }
+  new MutationObserver(function (muts) {
+    muts.forEach(function (m) {
+      m.addedNodes.forEach(function (n) {
+        if (n.tagName === 'IMG') track(n);
+        else if (n.querySelectorAll) n.querySelectorAll('img').forEach(track);
+      });
+    });
+  }).observe(html, { childList: true, subtree: true });
+
+  /* --- kontrollpanel --- */
+  function opt(list, cur) {
+    return list.map(function (v) { return '<option' + (v === cur ? ' selected' : '') + '>' + v + '</option>'; }).join('');
+  }
+  function cookie(k) { var m = document.cookie.match('(?:^|; )ll_' + k + '=(\\d+)'); return m ? m[1] : '0'; }
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('img').forEach(track);
+    var d = document.createElement('div');
+    d.id = 'll-panel';
+    if (store.get('min_panel', '') === '1') d.className = 'll-min';
+    d.innerHTML =
+      '<div class="ll-title">Loader lab <span id="ll-toggle">–</span></div>' +
+      '<label>Side-loader <select id="ll-loader">' + opt(['spinner', 'dots', 'bar', 'fade', 'curtain', 'none'], loader) + '</select></label>' +
+      '<label>Bilder <select id="ll-img-sel">' + opt(['fade', 'blur', 'skeleton', 'none'], img) + '</select></label>' +
+      '<label>Min. tid (ms) <input id="ll-min" type="number" step="100" value="' + min + '"></label>' +
+      '<label>Delay alt (ms) <input id="ll-delay" type="number" step="100" value="' + (q.get('delay') || cookie('delay')) + '"></label>' +
+      '<label>Delay bilder (ms) <input id="ll-imgdelay" type="number" step="250" value="' + (q.get('imgdelay') || cookie('imgdelay')) + '"></label>' +
+      '<button id="ll-reload">Last inn på nytt</button>' +
+      '<div class="ll-time" id="ll-time">laster…</div>';
+    document.body.appendChild(d);
+    document.getElementById('ll-toggle').onclick = function () {
+      d.classList.toggle('ll-min'); store.set('min_panel', d.classList.contains('ll-min') ? '1' : '');
+    };
+    document.getElementById('ll-reload').onclick = function () {
+      var v = function (id) { return document.getElementById(id).value; };
+      store.set('loader', v('ll-loader')); store.set('img', v('ll-img-sel')); store.set('min', v('ll-min'));
+      var u = new URL(location.href);
+      ['loader', 'img', 'min'].forEach(function (k) { u.searchParams.delete(k); });
+      u.searchParams.set('delay', v('ll-delay') || '0');
+      u.searchParams.set('imgdelay', v('ll-imgdelay') || '0');
+      location.href = u.toString();
+    };
+  });
+})();

@@ -1,0 +1,99 @@
+/* ===== Loader lab – rediger fritt =====
+   Side-loader styres av klasse på <html>:  ll-loading + ll-loader-<navn>
+   Bilde-effekt styres av klasse på <html>: ll-img-<navn>
+*/
+:root {
+  --ll-bg: #fff;
+  --ll-fg: #000;
+  --ll-accent: #e4002b;
+  --ll-duration: 600ms;
+}
+
+/* ---------- Side-loaders ---------- */
+html.ll-loading::after,
+html.ll-loading::before { content: ""; position: fixed; z-index: 2147483646; pointer-events: none; }
+
+/* Overlay for alle varianter (fjernes med fade når ll-loading fjernes) */
+html.ll-loader-spinner::after,
+html.ll-loader-dots::after,
+html.ll-loader-curtain::after { inset: 0; background: var(--ll-bg); transition: opacity var(--ll-duration); }
+html.ll-done.ll-loader-spinner::after,
+html.ll-done.ll-loader-dots::after { content: ""; position: fixed; inset: 0; z-index: 2147483646; background: var(--ll-bg); opacity: 0; pointer-events: none; transition: opacity var(--ll-duration); }
+
+/* spinner */
+html.ll-loading.ll-loader-spinner::before {
+  top: 50%; left: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; z-index: 2147483647;
+  border: 3px solid rgba(0,0,0,.12); border-top-color: var(--ll-fg); border-radius: 50%;
+  animation: ll-spin .8s linear infinite;
+}
+@keyframes ll-spin { to { transform: rotate(360deg); } }
+
+/* tre prikker */
+html.ll-loading.ll-loader-dots::before {
+  top: 50%; left: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; z-index: 2147483647; border-radius: 50%;
+  background: var(--ll-fg); box-shadow: -22px 0 var(--ll-fg), 22px 0 var(--ll-fg);
+  animation: ll-dots 1s ease-in-out infinite;
+}
+@keyframes ll-dots {
+  0%, 100% { box-shadow: -22px 0 var(--ll-fg), 22px 0 rgba(0,0,0,.15); background: rgba(0,0,0,.4); }
+  50% { box-shadow: -22px 0 rgba(0,0,0,.15), 22px 0 var(--ll-fg); background: var(--ll-fg); }
+}
+
+/* progress-bar øverst (ingen overlay – siden vises mens den laster) */
+html.ll-loader-bar::before {
+  content: ""; position: fixed; z-index: 2147483647; top: 0; left: 0; height: 3px;
+  width: var(--ll-progress, 0%); background: var(--ll-accent);
+  transition: width .3s ease, opacity .4s ease .3s; pointer-events: none;
+}
+html.ll-done.ll-loader-bar::before { width: 100%; opacity: 0; }
+
+/* gardin som glir opp */
+html.ll-done.ll-loader-curtain::after {
+  content: ""; position: fixed; inset: 0; z-index: 2147483646; background: var(--ll-fg);
+  transform: translateY(-100%); transition: transform 900ms cubic-bezier(.77,0,.18,1); pointer-events: none;
+}
+html.ll-loading.ll-loader-curtain::after { background: var(--ll-fg); }
+html.ll-loading.ll-loader-curtain::before {
+  top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2147483647;
+  content: "Nasjonalmuseet"; color: var(--ll-bg); font: 600 22px/1 sans-serif; letter-spacing: .02em;
+  animation: ll-pulse 1.2s ease-in-out infinite;
+}
+@keyframes ll-pulse { 50% { opacity: .35; } }
+
+/* innhold toner inn */
+html.ll-loader-fade body { transition: opacity var(--ll-duration) ease, transform var(--ll-duration) ease; }
+html.ll-loading.ll-loader-fade body { opacity: 0; transform: translateY(12px); }
+
+/* ---------- Bilde-effekter ---------- */
+html.ll-img-fade img.ll-img { opacity: 0; transition: opacity 500ms ease; }
+html.ll-img-fade img.ll-img.ll-loaded { opacity: 1; }
+
+html.ll-img-blur img.ll-img { filter: blur(18px); transform: scale(1.04); opacity: .4; transition: filter 700ms ease, transform 700ms ease, opacity 400ms; }
+html.ll-img-blur img.ll-img.ll-loaded { filter: none; transform: none; opacity: 1; }
+
+html.ll-img-skeleton img.ll-img:not(.ll-loaded) {
+  color: transparent;
+  background: linear-gradient(100deg, #eee 30%, #f8f8f8 50%, #eee 70%) 0 0 / 300% 100%;
+  animation: ll-shimmer 1.4s linear infinite;
+}
+html.ll-img-skeleton img.ll-img.ll-loaded { animation: ll-reveal 400ms ease; }
+@keyframes ll-shimmer { from { background-position: 100% 0; } to { background-position: -50% 0; } }
+@keyframes ll-reveal { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---------- Kontrollpanel ---------- */
+#ll-panel {
+  position: fixed; right: 12px; bottom: 12px; z-index: 2147483647;
+  background: #111; color: #fff; font: 12px/1.4 system-ui, sans-serif;
+  padding: 10px 12px; border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,.3);
+  display: grid; gap: 6px; min-width: 190px;
+}
+#ll-panel label { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+#ll-panel select, #ll-panel input { font: inherit; width: 95px; }
+#ll-panel button { font: inherit; cursor: pointer; padding: 4px; }
+#ll-panel .ll-title { font-weight: 600; display: flex; justify-content: space-between; }
+#ll-panel .ll-title span { cursor: pointer; opacity: .6; }
+#ll-panel.ll-min > :not(.ll-title) { display: none; }
+#ll-panel .ll-time { opacity: .7; }
+#ll-panel * { font: 12px/1.4 system-ui, sans-serif !important; color: inherit; letter-spacing: 0; }
+#ll-panel select, #ll-panel input, #ll-panel button { color: #111 !important; background: #fff; border: 1px solid #555; border-radius: 4px; padding: 2px 4px; height: auto; }
+#ll-panel .ll-title { font-weight: 600 !important; }
