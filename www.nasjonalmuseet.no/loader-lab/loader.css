@@ -266,8 +266,7 @@ html.ll-menu-anim .ll-mt {
 @keyframes ll-mt-wght { from { font-weight: var(--ll-h-from, 300); } to { font-weight: var(--ll-w, 400); } }
 
 /* ---------- Utstillingsside: sticky tittel (?sticky=on|off) ----------
-   Margin-trikset som bestemmer når den slipper, ligger i JS (setupSticky). */
-:root { --ll-sticky-top: 24px; }
+   --ll-sticky-top (startposisjonen) og margin-trikset som bestemmer når den slipper, settes i JS (setupSticky). */
 html.ll-sticky .ll-sticky-h { position: sticky; top: var(--ll-sticky-top); z-index: 3; }
 
 @media (prefers-reduced-motion: reduce) {

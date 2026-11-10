@@ -34,7 +34,6 @@
     ['Meny', 'Vekt-tid (ms)', '--ll-menu-wght-dur', 900, 100, 'ms'],
     ['Hover', 'Zoom', '--ll-zoom', 1.05, 0.01, ''],
     ['Hover', 'Zoom-tid (ms)', '--ll-zoom-dur', 450, 50, 'ms'],
-    ['Sticky', 'Topp (px)', '--ll-sticky-top', 24, 4, 'px'],
     ['Sticky', 'Slipp ved (% av bildet)', '--ll-sticky-stop', 50, 5, '']
   ];
   function varVal(v) { return store.get('v' + v[2], String(v[3])); }
@@ -250,24 +249,27 @@
     }).observe(host, { childList: true, subtree: true });
   });
 
-  /* --- utstillingsside: tittelen står sticky til den har kommet et stykke ned på bildet ---
+  /* --- utstillingsside: tittelen står stille der den lastes til midten av den er --ll-sticky-stop % ned på bildet ---
      Sticky slipper når tittelens margin-boks treffer bunnen av forelderen. Vi gir tittelen en stor
      margin-bottom og trekker bildet like mye opp igjen, så oppsettet er uendret, men slippet skjer
-     når tittelen er --ll-sticky-stop % ned på bildet. */
+     på rett sted i bildet. */
   var stickyUpdate = function () {};
   function setupSticky() {
     var hc = document.querySelector('.event-page .hero__heading-container');
     var media = hc && hc.parentElement.querySelector('.hero__media');
     if (!media) return;
     var parent = hc.parentElement;
-    var gap = media.getBoundingClientRect().top - hc.getBoundingClientRect().bottom;
+    var hr = hc.getBoundingClientRect();
+    var gap = media.getBoundingClientRect().top - hr.bottom;
+    // Står der den er når siden er scrollet helt opp (avstanden fra toppen av dokumentet)
+    hc.style.setProperty('--ll-sticky-top', Math.round(hr.top + window.scrollY) + 'px');
     stickyUpdate = function () {
       var on = html.classList.contains('ll-sticky');
       if (!on) { hc.style.marginBottom = media.style.marginTop = ''; return; }
       var stop = (parseFloat(getComputedStyle(html).getPropertyValue('--ll-sticky-stop')) || 50) / 100;
       var pr = parent.getBoundingClientRect(), mr = media.getBoundingClientRect();
       var bottom = pr.bottom - parseFloat(getComputedStyle(parent).paddingBottom);
-      var mb = Math.max(0, bottom - (mr.top + stop * mr.height));
+      var mb = Math.max(0, bottom - (mr.top + stop * mr.height) - hc.offsetHeight / 2);
       hc.style.marginBottom = mb + 'px';
       media.style.marginTop = (gap - mb) + 'px';
     };
