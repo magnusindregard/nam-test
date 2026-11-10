@@ -3,8 +3,8 @@
      ?loader=reveal|title|spinner|dots|bar|fade|curtain|weight|none   (side-loader)
      ?img=fade|blur|skeleton|none                  (bilde-effekt)
      ?hover=zoom|tilt|tight|none                   (hover på kort)
-     ?menu= ?sticky= ?grow= ?btnw= ?navw=  on|off  (meny-animasjon, sticky tittel/nav og voksende bilde
-                                                    på utstillingsside, vekt ved hover på knapper/nav)
+     ?menu= ?sticky= ?grow=  on|off                (meny-animasjon, sticky tittel/nav og voksende bilde
+                                                    på utstillingsside)
      ?min=600                                      (minimum visningstid i ms)
      ?delay=ms&imgdelay=ms                         (kunstig forsinkelse fra serve.py)
 */
@@ -27,9 +27,7 @@
   var TOGGLES = [
     ['Meny-animasjon', 'menu', 'll-menu-anim'],
     ['Sticky tittel/nav', 'sticky', 'll-sticky'],
-    ['Bilde vokser', 'grow', 'll-grow'],
-    ['Knapper: vekt ved hover', 'btnw', 'll-btn-wght'],
-    ['Nav: vekt ved hover', 'navw', 'll-nav-wght']
+    ['Bilde vokser', 'grow', 'll-grow']
   ];
   function isOn(t) { var v = store.get(t[1], 'on'); return v !== 'off' && v !== 'none'; }
   TOGGLES.forEach(function (t) { html.classList.toggle(t[2], isOn(t)); });
@@ -38,14 +36,14 @@
   var VARS = [
     ['Overskrift', 'Vekt fra', '--ll-h-from', 300, 10, ''],
     ['Overskrift', 'Vekt-tid (ms)', '--ll-h-duration', 1000, 100, 'ms'],
+    ['Overskrift', 'Min. str. (px, last på nytt)', '--ll-h-min', 28, 2, 'px'],
     ['Meny', 'Steg (ms)', '--ll-menu-step', 25, 5, 'ms'],
     ['Meny', 'Fade (ms)', '--ll-menu-dur', 250, 50, 'ms'],
     ['Meny', 'Vekt-tid (ms)', '--ll-menu-wght-dur', 900, 100, 'ms'],
     ['Hover', 'Zoom', '--ll-zoom', 1.05, 0.01, ''],
     ['Hover', 'Zoom-tid (ms)', '--ll-zoom-dur', 450, 50, 'ms'],
-    ['Hover', 'Vekt-tid (ms)', '--ll-hw-dur', 250, 50, 'ms'],
-    ['Sticky', 'Nav fader over (px)', '--ll-nav-fade', 200, 25, 'px'],
-    ['Sticky', 'Slipp ved (% av bildet)', '--ll-sticky-stop', 50, 5, '']
+    ['Sticky', 'Fader ved (% av bildet)', '--ll-sticky-stop', 50, 5, ''],
+    ['Sticky', 'Fade-lengde (px scroll)', '--ll-fade-len', 150, 25, 'px']
   ];
   function varVal(v) { return store.get('v' + v[2], String(v[3])); }
   VARS.forEach(function (v) { html.style.setProperty(v[2], varVal(v) + v[5]); });
@@ -90,10 +88,11 @@
     var added = [];
     var hs = [].slice.call(root.querySelectorAll('h1, h2, h3, h4'));
     if (root.matches && root.matches('h1, h2, h3, h4')) hs.push(root);
-    // Overskrifter: husk faktisk vekt, start på --ll-h-from.
+    // Overskrifter: husk faktisk vekt, start på --ll-h-from. Små overskrifter (under --ll-h-min) bare toner inn.
     // Ligger hele teksten i en lenke/span (som hero-tittelen på forsiden), er det den som har vekten.
+    var hMin = parseFloat(varVal(VARS[2])) || 0;
     hs.forEach(function (h) {
-      if (h.classList.contains('ll-h')) return;
+      if (h.classList.contains('ll-h') || parseFloat(getComputedStyle(h).fontSize) < hMin) return;
       var inner = h.querySelector('a, span');
       var src = inner && inner.textContent.trim() === h.textContent.trim() ? inner : h;
       h.style.setProperty('--ll-w', getComputedStyle(src).fontWeight);
@@ -269,43 +268,46 @@
     }).observe(host, { childList: true, subtree: true });
   });
 
-  /* --- utstillingsside: tittelen står stille der den lastes til midten av den er --ll-sticky-stop % ned på bildet ---
-     Sticky slipper når tittelens margin-boks treffer bunnen av forelderen. Vi gir tittelen en stor
-     margin-bottom og trekker bildet like mye opp igjen, så oppsettet er uendret, men slippet skjer
-     på rett sted i bildet.
-     Nav og logo står også stille og fader ut (CSS, scroll-drevet).
+  /* --- utstillingsside: tittel, nav og logo står stille der de lastes ---
+     Når midten av tittelen treffer --ll-sticky-stop % ned på bildet, fader alle ut samtidig over
+     --ll-fade-len px scroll (CSS, scroll-drevet; start/slutt regnes ut her).
      Bilde vokser: fra man begynner å scrolle til bildet når toppen av skjermen, skaleres det opp til det
      dekker hele viewporten. Bildeteksten skyves ned like mye, og plassen er reservert under bildet. */
   var stickyUpdate = function () {};
+  var scrollAnims = window.CSS && CSS.supports('animation-timeline: scroll()');
   function setupSticky() {
     var hc = document.querySelector('.event-page .hero__heading-container');
     var media = hc && hc.parentElement.querySelector('.hero__media');
     if (!media) return;
-    var parent = hc.parentElement;
     var pic = media.querySelector('.responsive-image__image') || media;
-    var hr = hc.getBoundingClientRect();
-    var gap = media.getBoundingClientRect().top - hr.bottom;
+    var top0 = Math.round(hc.getBoundingClientRect().top + window.scrollY);
     // Står der den er når siden er scrollet helt opp (avstanden fra toppen av dokumentet)
-    hc.style.setProperty('--ll-sticky-top', Math.round(hr.top + window.scrollY) + 'px');
+    hc.style.setProperty('--ll-sticky-top', top0 + 'px');
     html.classList.add('ll-event');
     stickyUpdate = function () {
-      // Bilde vokser – mål uten skalering (offsetWidth/-Height og forelderens posisjon påvirkes ikke av den)
+      // Mål uten skalering (offsetWidth/-Height og forelderens posisjon påvirkes ikke av den)
       var vw = document.documentElement.clientWidth, vh = window.innerHeight;
-      var mr0 = media.getBoundingClientRect();
-      var s = Math.max(vw / pic.offsetWidth, vh / pic.offsetHeight, 1);
-      html.style.setProperty('--ll-grow-end', Math.max(1, Math.round(mr0.top + window.scrollY)) + 'px');
+      var mr = media.getBoundingClientRect();
+      var mediaTop = mr.top + window.scrollY, h = pic.offsetHeight;
+      var s = Math.max(vw / pic.offsetWidth, vh / h, 1);
+      var growEnd = Math.max(1, Math.round(mediaTop));
+      html.style.setProperty('--ll-grow-end', growEnd + 'px');
       html.style.setProperty('--ll-grow-scale', s.toFixed(4));
-      html.style.setProperty('--ll-grow-extra', Math.round(pic.offsetHeight * (s - 1)) + 'px');
-      pic.style.transformOrigin = Math.round(vw / 2 - mr0.left) + 'px 0';
+      html.style.setProperty('--ll-grow-extra', Math.round(h * (s - 1)) + 'px');
+      pic.style.transformOrigin = Math.round(vw / 2 - mr.left) + 'px 0';
 
-      var on = html.classList.contains('ll-sticky');
-      if (!on) { hc.style.marginBottom = media.style.marginTop = ''; return; }
-      var stop = (parseFloat(getComputedStyle(html).getPropertyValue('--ll-sticky-stop')) || 50) / 100;
-      var pr = parent.getBoundingClientRect(), mr = media.getBoundingClientRect();
-      var bottom = pr.bottom - parseFloat(getComputedStyle(parent).paddingBottom);
-      var mb = Math.max(0, bottom - (mr.top + stop * mr.height) - hc.offsetHeight / 2);
-      hc.style.marginBottom = mb + 'px';
-      media.style.marginTop = (gap - mb) + 'px';
+      // Finn scrollposisjonen der punktet på bildet når midten av tittelen (bildet kan vokse underveis)
+      var cs = getComputedStyle(html);
+      var stop = (parseFloat(cs.getPropertyValue('--ll-sticky-stop')) || 50) / 100;
+      var len = parseFloat(cs.getPropertyValue('--ll-fade-len')) || 150;
+      var grow = scrollAnims && html.classList.contains('ll-grow');
+      var titleMid = top0 + hc.offsetHeight / 2, y = 0;
+      for (; y < mediaTop + h * s; y++) {
+        var sc = grow ? 1 + (s - 1) * Math.min(1, y / growEnd) : 1;
+        if (mediaTop - y + stop * h * sc <= titleMid) break;
+      }
+      html.style.setProperty('--ll-fade-start', y + 'px');
+      html.style.setProperty('--ll-fade-end', Math.round(y + len) + 'px');
     };
     hc.classList.add('ll-sticky-h');
     stickyUpdate();
@@ -366,7 +368,7 @@
         var v = VARS[inp.dataset.var];
         html.style.setProperty(v[2], inp.value + v[5]);
         store.set('v' + v[2], inp.value);
-        if (v[2] === '--ll-sticky-stop') stickyUpdate();
+        if (v[2] === '--ll-sticky-stop' || v[2] === '--ll-fade-len') stickyUpdate();
       };
     });
     document.getElementById('ll-reset').onclick = function () {
