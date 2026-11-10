@@ -43,7 +43,7 @@
     ['Hover', 'Zoom', '--ll-zoom', 1.05, 0.01, ''],
     ['Hover', 'Zoom-tid (ms)', '--ll-zoom-dur', 450, 50, 'ms'],
     ['Sticky', 'Fader ved (% av bildet)', '--ll-sticky-stop', 50, 5, ''],
-    ['Sticky', 'Fade-lengde (px scroll)', '--ll-fade-len', 150, 25, 'px']
+    ['Sticky', 'Fade-lengde (px scroll)', '--ll-fade-len', 400, 25, 'px']
   ];
   function varVal(v) { return store.get('v' + v[2], String(v[3])); }
   VARS.forEach(function (v) { html.style.setProperty(v[2], varVal(v) + v[5]); });
@@ -75,7 +75,7 @@
   function bgOf(el) {
     for (; el; el = el.parentElement) {
       var c = getComputedStyle(el).backgroundColor;
-      if (c && c !== 'transparent' && !/,\s*0\)$/.test(c)) return c;
+      if (c && c !== 'transparent' && !/^rgba\(.*,\s*0\)$/.test(c)) return c;
     }
     return '#fff';
   }
@@ -283,6 +283,8 @@
     var top0 = Math.round(hc.getBoundingClientRect().top + window.scrollY);
     // Står der den er når siden er scrollet helt opp (avstanden fra toppen av dokumentet)
     hc.style.setProperty('--ll-sticky-top', top0 + 'px');
+    // Headerens egen farge (før den gjøres gjennomsiktig) – tittelens forfedre er gjennomsiktige
+    html.style.setProperty('--ll-event-bg', bgOf(document.querySelector('header.header') || hc));
     html.classList.add('ll-event');
     stickyUpdate = function () {
       // Mål uten skalering (offsetWidth/-Height og forelderens posisjon påvirkes ikke av den)
@@ -299,7 +301,7 @@
       // Finn scrollposisjonen der punktet på bildet når midten av tittelen (bildet kan vokse underveis)
       var cs = getComputedStyle(html);
       var stop = (parseFloat(cs.getPropertyValue('--ll-sticky-stop')) || 50) / 100;
-      var len = parseFloat(cs.getPropertyValue('--ll-fade-len')) || 150;
+      var len = parseFloat(cs.getPropertyValue('--ll-fade-len')) || 400;
       var grow = scrollAnims && html.classList.contains('ll-grow');
       var titleMid = top0 + hc.offsetHeight / 2, y = 0;
       for (; y < mediaTop + h * s; y++) {
