@@ -5,7 +5,7 @@ uten cookie-banner, Google Tag Manager, HubSpot og Sentry.
 
 ## Start
     python3 serve.py
-Åpne http://localhost:8000/samlingen/
+Åpne http://localhost:8000/lab/ – lenker til forside, samlingen og en objektside
 
 ## Loader lab
 Panelet nede til høyre bytter animasjon og forsinkelse. Du kan også bruke URL-parametre:
@@ -16,6 +16,9 @@ Panelet nede til høyre bytter animasjon og forsinkelse. Du kan også bruke URL-
 - `?imgdelay=3000` – kunstig forsinkelse bare på bilder (ms)
 
 Eller ved oppstart: `python3 serve.py --delay 800 --img-delay 3000`
+
+Undersider (temaer, verk, historier …) hentes live fra nasjonalmuseet.no når du klikker deg videre.
+Serveren legger inn loader-lab, fjerner sporing og skriver om lenkene så du blir på localhost.
 
 Egne animasjoner skrives i `www.nasjonalmuseet.no/loader-lab/loader.css` og `loader.js`.
 API-kall (/api/...) og kunstverk-bilder (ms01) hentes live fra nasjonalmuseet.no via serveren, så du må være på nett.

@@ -94,6 +94,10 @@ html.ll-img-skeleton img.ll-img.ll-loaded { animation: ll-reveal 400ms ease; }
 #ll-panel .ll-title span { cursor: pointer; opacity: .6; }
 #ll-panel.ll-min > :not(.ll-title) { display: none; }
 #ll-panel .ll-time { opacity: .7; }
+#ll-panel { max-height: calc(100vh - 24px); overflow-y: auto; }
+#ll-panel .ll-sec { margin-top: 6px; padding-top: 8px; border-top: 1px solid #333; display: flex; justify-content: space-between; font-weight: 600 !important; }
+#ll-panel .ll-sec span { cursor: pointer; opacity: .6; font-weight: 400 !important; }
+#ll-panel .ll-sub { opacity: .55; margin-top: 2px; }
 #ll-panel * { font: 12px/1.4 system-ui, sans-serif !important; color: inherit; letter-spacing: 0; }
 #ll-panel select, #ll-panel input, #ll-panel button { color: #111 !important; background: #fff; border: 1px solid #555; border-radius: 4px; padding: 2px 4px; height: auto; }
 #ll-panel .ll-title { font-weight: 600 !important; }
@@ -164,8 +168,12 @@ html.ll-loader-reveal .ll-r.ll-row.ll-in {
 
 html.ll-loader-reveal .ll-h {
   font-family: "MuseetSansVF-lab", sans-serif !important;
-  font-weight: 300 !important;
+  font-weight: var(--ll-h-from, 300) !important;
   transition: none;
+}
+/* Tekst i lenke/span inne i overskriften (f.eks. hero-tittelen på forsiden) har egen vekt – følg overskriften */
+html.ll-loader-reveal .ll-h :is(a, span:not([class*="icon"])) {
+  font-family: inherit !important; font-weight: inherit !important;
 }
 html.ll-loader-reveal .ll-h.ll-in {
   font-weight: var(--ll-w, 500) !important;
@@ -190,31 +198,78 @@ html.ll-done.ll-loader-reveal .header__logo svg g path { stroke-width: 0; }
    Kort: .ulc-item (Fra utstillingene), .promo-card, .theme-card. Sidens egen bilde-zoom (scale 1.03) slås av. */
 :root {
   --ll-hover-duration: 500ms; --ll-hover-ease: cubic-bezier(.2,.7,.2,1);
-  --ll-tilt-lift: -6px; --ll-tilt-rotate: -1deg;   /* tilt */
-  --ll-tight-inset: 10px;                          /* tight */
+  --ll-tilt-lift: -8px;                            /* tilt (som anti.as/design) */
+  --ll-tilt-duration: 400ms; --ll-tilt-ease: cubic-bezier(.65,.05,.36,1);
+  --ll-tight-inset: 3px;                           /* tight */
 }
 html.ll-hover-tilt :is(.ulc-item, .promo-card, .theme-card):hover img,
 html.ll-hover-tight :is(.ulc-item, .promo-card, .theme-card):hover img { scale: 1 !important; }
 
-/* 1. Tilt: hele kortet (bilde + tekst) løftes og vippes litt opp.
-   translate/rotate (ikke transform) så det ikke kolliderer med reveal-animasjonen.
+/* 1. Tilt: hele kortet (bilde + tekst) løftes rett opp, uten rotasjon – som anti.as/design.
+   translate (ikke transform) så det ikke kolliderer med reveal-animasjonen.
    Transition-listen tar med reveal sine egenskaper, siden den overstyrer den. */
 html.ll-hover-tilt :is(.ulc-item, .promo-card, .theme-card) {
   transition: opacity var(--ll-row-duration) ease-out, transform var(--ll-row-duration) var(--ll-r-ease),
-              translate var(--ll-hover-duration) var(--ll-hover-ease), rotate var(--ll-hover-duration) var(--ll-hover-ease) !important;
+              translate var(--ll-tilt-duration) var(--ll-tilt-ease) !important;
 }
-html.ll-hover-tilt :is(.ulc-item, .promo-card, .theme-card):hover {
-  translate: 0 var(--ll-tilt-lift); rotate: var(--ll-tilt-rotate);
-}
+html.ll-hover-tilt :is(.ulc-item, .promo-card, .theme-card):hover { translate: 0 var(--ll-tilt-lift); }
 
-/* 2. Tight: kanten går litt inn i bildet */
-html.ll-hover-tight :is(.ulc-item__image, .promo-card__image, .theme-card__image) {
+/* 2. Tight: kanten går 3px inn i bildet. Klipper ytterste bildeboks (wrapper hos promo-card).
+   Theme-card klippes i sin helhet – gradienten (.theme-card:after) og tittelen ligger oppå bildet,
+   så ellers blir gradienten stående i full størrelse som et eget lag. */
+html.ll-hover-tight :is(.ulc-item__image, .promo-card__image-wrapper, .theme-card) {
   clip-path: inset(0); transition: clip-path var(--ll-hover-duration) var(--ll-hover-ease);
 }
-html.ll-hover-tight :is(.ulc-item, .promo-card, .theme-card):hover :is(.ulc-item__image, .promo-card__image, .theme-card__image) {
+html.ll-hover-tight .theme-card {
+  transition: opacity var(--ll-row-duration) ease-out, transform var(--ll-row-duration) var(--ll-r-ease),
+              clip-path var(--ll-hover-duration) var(--ll-hover-ease) !important;
+}
+html.ll-hover-tight :is(.ulc-item__image, .promo-card__image-wrapper, .promo-card__image, .theme-card__image) {
+  background: none !important;
+}
+html.ll-hover-tight :is(.ulc-item__image, .promo-card__image-wrapper, .promo-card__image, .theme-card__image)::before,
+html.ll-hover-tight :is(.ulc-item__image, .promo-card__image-wrapper, .promo-card__image, .theme-card__image)::after {
+  display: none !important;
+}
+html.ll-hover-tight :is(.ulc-item, .promo-card):hover :is(.ulc-item__image, .promo-card__image-wrapper),
+html.ll-hover-tight .theme-card:hover {
   clip-path: inset(var(--ll-tight-inset));
 }
 
+/* 3. Zoom: sidens egen bilde-zoom, men rask og myk. (Bilde-fade setter sin egen transition på img,
+   så sidens "scale .3s" forsvant – derfor hoppet zoomen før.) */
+:root { --ll-zoom: 1.05; --ll-zoom-dur: 450ms; --ll-zoom-ease: cubic-bezier(.2,.7,.2,1); }
+html.ll-hover-zoom :is(.ulc-item, .promo-card, .theme-card) img {
+  transition: opacity 500ms ease, scale var(--ll-zoom-dur) var(--ll-zoom-ease) !important;
+}
+html.ll-hover-zoom :is(.ulc-item, .promo-card, .theme-card):is(:hover, :focus-visible) img { scale: var(--ll-zoom) !important; }
+
 @media (prefers-reduced-motion: reduce) {
-  html.ll-hover-tilt :is(.ulc-item, .promo-card, .theme-card):hover { translate: none; rotate: none; }
+  html.ll-hover-tilt :is(.ulc-item, .promo-card, .theme-card):hover { translate: none; }
+  html.ll-hover-zoom :is(.ulc-item, .promo-card, .theme-card):is(:hover, :focus-visible) img { scale: 1 !important; }
+}
+
+/* ---------- Meny (?menu=anim|none) ----------
+   Punktene toner raskt inn fra topp til bunn (--ll-i settes i JS), de store titlene går fra tynn til sin vekt.
+   Bare "backwards": etter animasjonen gjelder sidens egne stiler (og hover) igjen. */
+:root { --ll-menu-step: 25ms; --ll-menu-dur: 250ms; --ll-menu-wght-dur: 900ms; }
+html.ll-menu-anim .ll-mi {
+  animation: ll-mi-in var(--ll-menu-dur) ease-out backwards;
+  animation-delay: calc(var(--ll-i, 0) * var(--ll-menu-step));
+}
+@keyframes ll-mi-in { from { opacity: 0; } }
+html.ll-menu-anim .ll-mt {
+  font-family: "MuseetSansVF-lab", sans-serif !important;
+  animation: ll-mt-wght var(--ll-menu-wght-dur) var(--ll-r-ease) backwards;
+  animation-delay: calc(var(--ll-i, 0) * var(--ll-menu-step));
+}
+@keyframes ll-mt-wght { from { font-weight: var(--ll-h-from, 300); } to { font-weight: var(--ll-w, 400); } }
+
+/* ---------- Utstillingsside: sticky tittel (?sticky=on|off) ----------
+   Margin-trikset som bestemmer når den slipper, ligger i JS (setupSticky). */
+:root { --ll-sticky-top: 24px; }
+html.ll-sticky .ll-sticky-h { position: sticky; top: var(--ll-sticky-top); z-index: 3; }
+
+@media (prefers-reduced-motion: reduce) {
+  html.ll-menu-anim :is(.ll-mi, .ll-mt) { animation: none; }
 }

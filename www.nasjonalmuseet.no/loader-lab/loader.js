@@ -2,6 +2,8 @@
    URL-parametre:
      ?loader=reveal|title|spinner|dots|bar|fade|curtain|weight|none   (side-loader)
      ?img=fade|blur|skeleton|none                  (bilde-effekt)
+     ?hover=zoom|tilt|tight|none                   (hover på kort)
+     ?menu=anim|none  ?sticky=on|off               (meny-animasjon, sticky tittel på utstillingsside)
      ?min=600                                      (minimum visningstid i ms)
      ?delay=ms&imgdelay=ms                         (kunstig forsinkelse fra serve.py)
 */
@@ -17,8 +19,26 @@
   var t0 = performance.now();
   var html = document.documentElement;
 
-  var hover = store.get('hover', 'tilt');
+  var hover = store.get('hover', 'zoom');
+  var menu = store.get('menu', 'anim');
+  var sticky = store.get('sticky', 'on');
   html.classList.add('ll-loading', 'll-loader-' + loader, 'll-img-' + img, 'll-hover-' + hover);
+  if (menu === 'anim') html.classList.add('ll-menu-anim');
+
+  /* --- justerbare CSS-variabler (endres live fra panelet, huskes i localStorage) --- */
+  var VARS = [
+    ['Overskrift', 'Vekt fra', '--ll-h-from', 300, 10, ''],
+    ['Overskrift', 'Vekt-tid (ms)', '--ll-h-duration', 1000, 100, 'ms'],
+    ['Meny', 'Steg (ms)', '--ll-menu-step', 25, 5, 'ms'],
+    ['Meny', 'Fade (ms)', '--ll-menu-dur', 250, 50, 'ms'],
+    ['Meny', 'Vekt-tid (ms)', '--ll-menu-wght-dur', 900, 100, 'ms'],
+    ['Hover', 'Zoom', '--ll-zoom', 1.05, 0.01, ''],
+    ['Hover', 'Zoom-tid (ms)', '--ll-zoom-dur', 450, 50, 'ms'],
+    ['Sticky', 'Topp (px)', '--ll-sticky-top', 24, 4, 'px'],
+    ['Sticky', 'Slipp ved (% av bildet)', '--ll-sticky-stop', 50, 5, '']
+  ];
+  function varVal(v) { return store.get('v' + v[2], String(v[3])); }
+  VARS.forEach(function (v) { html.style.setProperty(v[2], varVal(v) + v[5]); });
   if (q.get('headline')) html.classList.add('ll-headline');
 
   /* --- falsk progress for "bar" --- */
@@ -39,8 +59,11 @@
     }, wait);
   }
 
-  /* --- reveal: blokker toner inn én etter én nedover når de kommer til syne --- */
+  /* --- reveal: blokker toner inn én etter én nedover når de kommer til syne ---
+     Rekkefølge: logo (0) → tittel (+200) → meny (+MENU_DELAY) → ingress (tittel + AFTER_TITLE) → resten */
   var STEP = 80, MAX_DELAY = 600, nextSlot = 0;
+  var MENU_DELAY = 400, AFTER_TITLE = 300;
+  var io = null, revealStarted = false;
   function bgOf(el) {
     for (; el; el = el.parentElement) {
       var c = getComputedStyle(el).backgroundColor;
@@ -48,24 +71,78 @@
     }
     return '#fff';
   }
+  var ROOTS = 'main'; // footeren vises som vanlig
+  var SEL = 'h1, h2, h3, h4, p, li, .ulc-item, figure, picture, img, form, .search-input, a, button';
+  // Tagger blokkene i root (ytterste treff vinner, så et kort toner inn som én enhet). Returnerer de nye.
+  function tag(root) {
+    var added = [];
+    var hs = [].slice.call(root.querySelectorAll('h1, h2, h3, h4'));
+    if (root.matches && root.matches('h1, h2, h3, h4')) hs.push(root);
+    // Overskrifter: husk faktisk vekt, start på --ll-h-from.
+    // Ligger hele teksten i en lenke/span (som hero-tittelen på forsiden), er det den som har vekten.
+    hs.forEach(function (h) {
+      if (h.classList.contains('ll-h')) return;
+      var inner = h.querySelector('a, span');
+      var src = inner && inner.textContent.trim() === h.textContent.trim() ? inner : h;
+      h.style.setProperty('--ll-w', getComputedStyle(src).fontWeight);
+      h.classList.add('ll-h');
+    });
+    var els = [].slice.call(root.querySelectorAll(SEL));
+    if (root.matches && root.matches(SEL)) els.unshift(root);
+    els.forEach(function (el) {
+      for (var a = el; a && a !== document.body; a = a.parentElement) if (a.__llr) return;
+      el.__llr = 1;
+      el.classList.add('ll-r');
+      added.push(el);
+    });
+    return added;
+  }
+  var lateObserver;
   function setupReveal() {
     var logo = document.querySelector('.header__logo');
     if (logo) html.style.setProperty('--ll-logo-bg', bgOf(logo));
-    // Overskrifter: husk faktisk vekt, start på 300
-    document.querySelectorAll('h1, h2, h3, h4').forEach(function (h) {
-      h.style.setProperty('--ll-w', getComputedStyle(h).fontWeight);
-      h.classList.add('ll-h');
-    });
-    // Blokker: ytterste treff vinner, så et kort toner inn som én enhet
-    var sel = 'h1, h2, h3, h4, p, li, .ulc-item, figure, picture, img, form, .search-input, a, button';
-    document.querySelectorAll('main, footer, .footer-new').forEach(function (root) {
-      root.querySelectorAll(sel).forEach(function (el) {
-        for (var a = el; a && a !== document.body; a = a.parentElement) if (a.__llr) return;
-        el.__llr = 1;
-        el.classList.add('ll-r');
+    document.querySelectorAll(ROOTS).forEach(tag);
+    // Menypunktene i toppen: egen tur, kun fade (ikke via IntersectionObserver)
+    document.querySelectorAll('.header__nav-item').forEach(function (el) { el.classList.add('ll-r'); });
+    // Innhold Vue tegner senere (API-data, byttede noder) skal også inn i rekkefølgen, ikke bare dukke opp
+    lateObserver = new MutationObserver(function (muts) {
+      muts.forEach(function (m) {
+        m.addedNodes.forEach(function (n) {
+          if (n.nodeType !== 1 || !n.closest(ROOTS)) return;
+          // Før start plukkes de opp av startReveal; etterpå går de via observeren som resten
+          var added = tag(n);
+          if (revealStarted) added.forEach(function (el) { if (io) io.observe(el); else show([el]); });
+        });
       });
     });
+    lateObserver.observe(document.body, { childList: true, subtree: true });
   }
+  function showMenu() {
+    document.querySelectorAll('.header__nav-item').forEach(function (el) {
+      el.style.transitionDelay = MENU_DELAY + 'ms';
+      requestAnimationFrame(function () { el.classList.add('ll-in'); });
+    });
+  }
+  // Vue hydrerer og bytter ut noder (f.eks. ingressen, som er v-html). Noen sider hydrerer på
+  // 'readyforssr' etter DOMContentLoaded, andre synkront i HTML-en. Vent til hydreringen er i gang
+  // og DOM-en har vært rolig en stund, så klassene ikke forsvinner.
+  var hydrated = new Promise(function (resolve) {
+    var QUIET = 80, CAP = 600, started;
+    function settle() {
+      if (started) return; started = 1;
+      var t;
+      var mo = new MutationObserver(function () { clearTimeout(t); t = setTimeout(finish, QUIET); });
+      function finish() { mo.disconnect(); resolve(); }
+      mo.observe(document.body, { childList: true, subtree: true });
+      t = setTimeout(finish, QUIET);
+      setTimeout(finish, CAP);
+    }
+    window.addEventListener('readyforssr', settle, { once: true });
+    document.addEventListener('DOMContentLoaded', function () {
+      var roots = document.querySelectorAll('[id^="vue_"]');
+      if (roots.length && [].every.call(roots, function (r) { return r.__vue_app__; })) settle();
+    });
+  });
   // Kort på samme rad (samme forelder, samme topp) kommer inn samtidig
   function rowOf(el) {
     var p = el.parentElement, top = el.getBoundingClientRect().top;
@@ -96,6 +173,8 @@
     nextSlot = at + STEP;
     var delay = Math.round(at - now) + 'ms';
     var isRow = els.length > 1;
+    // Etter sidetittelen: lengre pause, så tittelen rekker å komme i gang før ingressen
+    if (els.some(function (el) { return el.tagName === 'H1' || el.querySelector('h1'); })) nextSlot = at + AFTER_TITLE;
     els.forEach(function (el) {
       var hs = [].slice.call(el.querySelectorAll('.ll-h'));
       if (el.classList.contains('ll-h')) hs.push(el);
@@ -107,8 +186,10 @@
   }
   function startReveal() {
     nextSlot = performance.now() + 200; // logoen først
-    var els = document.querySelectorAll('.ll-r');
-    var io = 'IntersectionObserver' in window && new IntersectionObserver(function (entries) {
+    revealStarted = true;
+    showMenu();
+    var els = document.querySelectorAll('.ll-r:not(.header__nav-item)');
+    io = 'IntersectionObserver' in window && new IntersectionObserver(function (entries) {
       entries.filter(function (e) { return e.isIntersecting; })
         .map(function (e) { return e.target; })
         .sort(function (a, b) {
@@ -129,14 +210,74 @@
   if (loader === 'title' || loader === 'reveal') {
     // Ikke vent på alle bildene: vis siden når HTML-en er klar og den variable fonten er lastet.
     document.addEventListener('DOMContentLoaded', function () {
-      if (loader === 'reveal') setupReveal();
       var f = document.fonts ? document.fonts.load('300 1em "MuseetSansVF-lab"') : Promise.resolve();
+      var ready = loader === 'reveal' ? Promise.all([f, hydrated]) : f;
       var timeout = new Promise(function (r) { setTimeout(r, 3000); });
-      Promise.race([f, timeout]).then(function () { requestAnimationFrame(function () { requestAnimationFrame(done); }); });
+      Promise.race([ready, timeout]).then(function () {
+        if (loader === 'reveal') setupReveal();
+        requestAnimationFrame(function () { requestAnimationFrame(done); });
+      });
     });
   } else {
     window.addEventListener('load', done);
   }
+
+  /* --- meny: rask fade fra topp til bunn, store titler går fra tynn til sin vekt ---
+     Vue lager menyen (og undermenyene) på nytt hver gang den åpnes, så CSS-animasjonene spilles av hver gang.
+     Her får hvert punkt rekkefølgen sin (--ll-i) etter plassering på skjermen. */
+  var MENU_ITEMS = '.menu__small-list li, .menu__opening-hours > *, .menu__large li, .menu__sublevel li';
+  function tagMenu(root) {
+    var items = [].filter.call(root.querySelectorAll(MENU_ITEMS), function (el) { return !el.__llm; });
+    if (!items.length) return;
+    items.map(function (el) { return { el: el, r: el.getBoundingClientRect() }; })
+      .sort(function (a, b) { return (a.r.top - b.r.top) || (a.r.left - b.r.left); })
+      .forEach(function (o, i) {
+        o.el.__llm = 1;
+        o.el.style.setProperty('--ll-i', i);
+        o.el.classList.add('ll-mi');
+        var t = o.el.querySelector('.menu__large-item > span');
+        if (t) { t.style.setProperty('--ll-w', getComputedStyle(t).fontWeight); t.classList.add('ll-mt'); }
+      });
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    var host = document.querySelector('.menu-new');
+    if (!host) return;
+    var pending;
+    new MutationObserver(function () {
+      // vent én frame så punktene har fått plassen sin før de sorteres
+      if (pending) return;
+      pending = requestAnimationFrame(function () { pending = 0; tagMenu(host); });
+    }).observe(host, { childList: true, subtree: true });
+  });
+
+  /* --- utstillingsside: tittelen står sticky til den har kommet et stykke ned på bildet ---
+     Sticky slipper når tittelens margin-boks treffer bunnen av forelderen. Vi gir tittelen en stor
+     margin-bottom og trekker bildet like mye opp igjen, så oppsettet er uendret, men slippet skjer
+     når tittelen er --ll-sticky-stop % ned på bildet. */
+  var stickyUpdate = function () {};
+  function setupSticky() {
+    var hc = document.querySelector('.event-page .hero__heading-container');
+    var media = hc && hc.parentElement.querySelector('.hero__media');
+    if (!media) return;
+    var parent = hc.parentElement;
+    var gap = media.getBoundingClientRect().top - hc.getBoundingClientRect().bottom;
+    stickyUpdate = function () {
+      var on = html.classList.contains('ll-sticky');
+      if (!on) { hc.style.marginBottom = media.style.marginTop = ''; return; }
+      var stop = (parseFloat(getComputedStyle(html).getPropertyValue('--ll-sticky-stop')) || 50) / 100;
+      var pr = parent.getBoundingClientRect(), mr = media.getBoundingClientRect();
+      var bottom = pr.bottom - parseFloat(getComputedStyle(parent).paddingBottom);
+      var mb = Math.max(0, bottom - (mr.top + stop * mr.height));
+      hc.style.marginBottom = mb + 'px';
+      media.style.marginTop = (gap - mb) + 'px';
+    };
+    hc.classList.add('ll-sticky-h');
+    if (sticky === 'on') html.classList.add('ll-sticky');
+    stickyUpdate();
+    if ('ResizeObserver' in window) new ResizeObserver(function () { stickyUpdate(); }).observe(media);
+    window.addEventListener('resize', function () { stickyUpdate(); });
+  }
+  document.addEventListener('DOMContentLoaded', function () { hydrated.then(setupSticky); });
 
   /* --- bilde-effekter --- */
   function track(im) {
@@ -169,13 +310,47 @@
       '<div class="ll-title">Loader lab <span id="ll-toggle">–</span></div>' +
       '<label>Side-loader <select id="ll-loader">' + opt(['reveal', 'title', 'spinner', 'dots', 'bar', 'fade', 'curtain', 'weight', 'none'], loader) + '</select></label>' +
       '<label>Bilder <select id="ll-img-sel">' + opt(['fade', 'blur', 'skeleton', 'none'], img) + '</select></label>' +
-      '<label>Hover <select id="ll-hover">' + opt(['tilt', 'tight', 'none'], hover) + '</select></label>' +
+      '<label>Hover <select id="ll-hover">' + opt(['zoom', 'tilt', 'tight', 'none'], hover) + '</select></label>' +
       '<label>Min. tid (ms) <input id="ll-min" type="number" step="100" value="' + min + '"></label>' +
       '<label>Delay alt (ms) <input id="ll-delay" type="number" step="100" value="' + (q.get('delay') || cookie('delay')) + '"></label>' +
       '<label>Delay bilder (ms) <input id="ll-imgdelay" type="number" step="250" value="' + (q.get('imgdelay') || cookie('imgdelay')) + '"></label>' +
       '<button id="ll-reload">Last inn på nytt</button>' +
+      '<div class="ll-sec">Live <span id="ll-reset">nullstill</span></div>' +
+      '<label>Meny <select id="ll-menu">' + opt(['anim', 'none'], menu) + '</select></label>' +
+      '<label>Sticky tittel <select id="ll-sticky">' + opt(['on', 'off'], sticky) + '</select></label>' +
+      VARS.map(function (v, i) {
+        var head = i === 0 || VARS[i - 1][0] !== v[0] ? '<div class="ll-sub">' + v[0] + '</div>' : '';
+        return head + '<label>' + v[1] + ' <input data-var="' + i + '" type="number" step="' + v[4] + '" value="' + varVal(v) + '"></label>';
+      }).join('') +
       '<div class="ll-time" id="ll-time">laster…</div>';
     document.body.appendChild(d);
+    // Live-endringer: ingen omlasting
+    d.querySelectorAll('[data-var]').forEach(function (inp) {
+      inp.oninput = function () {
+        var v = VARS[inp.dataset.var];
+        html.style.setProperty(v[2], inp.value + v[5]);
+        store.set('v' + v[2], inp.value);
+        if (v[2] === '--ll-sticky-stop') stickyUpdate();
+      };
+    });
+    document.getElementById('ll-reset').onclick = function () {
+      d.querySelectorAll('[data-var]').forEach(function (inp) {
+        var v = VARS[inp.dataset.var];
+        inp.value = v[3];
+        html.style.setProperty(v[2], v[3] + v[5]);
+        try { localStorage.removeItem('ll2_v' + v[2]); } catch (e) {}
+      });
+      stickyUpdate();
+    };
+    document.getElementById('ll-menu').onchange = function () {
+      menu = this.value; store.set('menu', menu);
+      html.classList.toggle('ll-menu-anim', menu === 'anim');
+    };
+    document.getElementById('ll-sticky').onchange = function () {
+      sticky = this.value; store.set('sticky', sticky);
+      if (document.querySelector('.ll-sticky-h')) html.classList.toggle('ll-sticky', sticky === 'on');
+      stickyUpdate();
+    };
     document.getElementById('ll-toggle').onclick = function () {
       d.classList.toggle('ll-min'); store.set('min_panel', d.classList.contains('ll-min') ? '1' : '');
     };
