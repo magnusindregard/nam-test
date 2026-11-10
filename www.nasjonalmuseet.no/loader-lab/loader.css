@@ -269,19 +269,34 @@ html.ll-menu-anim .ll-mt {
    --ll-sticky-top (startposisjonen) og margin-trikset som bestemmer når den slipper, settes i JS (setupSticky). */
 html.ll-sticky .ll-sticky-h { position: sticky; top: var(--ll-sticky-top); z-index: 3; }
 
-/* Nav og logo står stille som tittelen. Alle fader ut samtidig når tittelen treffer midten av bildet
-   (--ll-fade-start/-end settes i JS). Headeren er gjennomsiktig så bildet kan vokse opp under den. */
+/* Nav og logo står stille som tittelen. Når bildet når opp til tittelen, går tittelen tilbake til regular,
+   og så fader alle ut samtidig (--ll-wght-start/-end og --ll-fade-start/-end settes i JS). Headeren er gjennomsiktig så bildet kan vokse opp under den. */
 html.ll-event.ll-sticky .header-menu-new { position: sticky; top: 0; z-index: 10; }
 html.ll-event.ll-sticky header.header { background: transparent !important; }
 /* ...og bak den gjennomsiktige headeren skal sidens egen bakgrunn (sort) vises, ikke hvitt */
 html.ll-event.ll-sticky .site-layout { background-color: var(--ll-event-bg, #000); }
 @supports (animation-timeline: scroll()) {
-  html.ll-event.ll-sticky :is(.header-menu-new, .ll-sticky-h) {
+  html.ll-event.ll-sticky .header-menu-new {
     animation: ll-sticky-out linear both;
     animation-timeline: scroll(root);
     animation-range: var(--ll-fade-start, 0px) var(--ll-fade-end, 400px);
   }
+  html.ll-event.ll-sticky .ll-sticky-h {
+    animation: ll-wback linear both, ll-sticky-out linear both;
+    animation-timeline: scroll(root), scroll(root);
+    animation-range: var(--ll-wght-start, 0px) var(--ll-wght-end, 150px), var(--ll-fade-start, 0px) var(--ll-fade-end, 400px);
+  }
+  /* Vekten følger --ll-wback (0 → 1). Den er registrert så den animeres jevnt og arves ned til h1,
+     og må gå via en variabel fordi reveal setter vekten med !important (som slår animasjoner). */
+  html.ll-event.ll-sticky .ll-sticky-h :is(h1:not(.ll-h), h1.ll-h.ll-in) {
+    font-family: "MuseetSansVF-lab", sans-serif !important;
+    font-weight: calc(var(--ll-w, 500) - (var(--ll-w, 500) - 400) * var(--ll-wback)) !important;
+  }
+  /* Etter innlastingen skal vekten følge scrollen direkte, ikke glattes av reveal-overgangen */
+  html.ll-event.ll-sticky .ll-sticky-h h1.ll-h-done { transition: none !important; }
 }
+@property --ll-wback { syntax: "<number>"; inherits: true; initial-value: 0; }
+@keyframes ll-wback { to { --ll-wback: 1; } }
 @keyframes ll-sticky-out { to { opacity: 0; visibility: hidden; } }
 
 /* Bilde vokser til det dekker viewporten når toppen av bildet når toppen av skjermen.

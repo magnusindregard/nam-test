@@ -42,7 +42,7 @@
     ['Meny', 'Vekt-tid (ms)', '--ll-menu-wght-dur', 900, 100, 'ms'],
     ['Hover', 'Zoom', '--ll-zoom', 1.05, 0.01, ''],
     ['Hover', 'Zoom-tid (ms)', '--ll-zoom-dur', 450, 50, 'ms'],
-    ['Sticky', 'Fader ved (% av bildet)', '--ll-sticky-stop', 50, 5, ''],
+    ['Sticky', 'Vekt tilbake (px scroll)', '--ll-wback-len', 150, 25, 'px'],
     ['Sticky', 'Fade-lengde (px scroll)', '--ll-fade-len', 400, 25, 'px']
   ];
   function varVal(v) { return store.get('v' + v[2], String(v[3])); }
@@ -109,6 +109,10 @@
     });
     return added;
   }
+  // Når en overskrift har nådd vekten sin: merk den, så vekt-endringer etterpå (scroll) ikke glattes av overgangen
+  document.addEventListener('transitionend', function (e) {
+    if (e.propertyName === 'font-weight' && e.target.classList && e.target.classList.contains('ll-h')) e.target.classList.add('ll-h-done');
+  });
   var lateObserver;
   function setupReveal() {
     var logo = document.querySelector('.header__logo');
@@ -269,8 +273,8 @@
   });
 
   /* --- utstillingsside: tittel, nav og logo står stille der de lastes ---
-     Når midten av tittelen treffer --ll-sticky-stop % ned på bildet, fader alle ut samtidig over
-     --ll-fade-len px scroll (CSS, scroll-drevet; start/slutt regnes ut her).
+     Når bildet når opp til tittelen, går tittelen tilbake fra medium til regular over --ll-wback-len px
+     scroll, og så fader alle ut samtidig over --ll-fade-len px (CSS, scroll-drevet; start/slutt regnes ut her).
      Bilde vokser: fra man begynner å scrolle til bildet når toppen av skjermen, skaleres det opp til det
      dekker hele viewporten. Bildeteksten skyves ned like mye, og plassen er reservert under bildet. */
   var stickyUpdate = function () {};
@@ -298,18 +302,15 @@
       html.style.setProperty('--ll-grow-extra', Math.round(h * (s - 1)) + 'px');
       pic.style.transformOrigin = Math.round(vw / 2 - mr.left) + 'px 0';
 
-      // Finn scrollposisjonen der punktet på bildet når midten av tittelen (bildet kan vokse underveis)
+      // Bildet når opp til tittelen (toppen av bildet flytter seg ikke når det vokser – origin er øverst)
       var cs = getComputedStyle(html);
-      var stop = (parseFloat(cs.getPropertyValue('--ll-sticky-stop')) || 50) / 100;
+      var wlen = parseFloat(cs.getPropertyValue('--ll-wback-len')) || 0;
       var len = parseFloat(cs.getPropertyValue('--ll-fade-len')) || 400;
-      var grow = scrollAnims && html.classList.contains('ll-grow');
-      var titleMid = top0 + hc.offsetHeight / 2, y = 0;
-      for (; y < mediaTop + h * s; y++) {
-        var sc = grow ? 1 + (s - 1) * Math.min(1, y / growEnd) : 1;
-        if (mediaTop - y + stop * h * sc <= titleMid) break;
-      }
-      html.style.setProperty('--ll-fade-start', y + 'px');
-      html.style.setProperty('--ll-fade-end', Math.round(y + len) + 'px');
+      var y = Math.max(0, Math.round(mediaTop - (top0 + hc.offsetHeight)));
+      html.style.setProperty('--ll-wght-start', y + 'px');
+      html.style.setProperty('--ll-wght-end', Math.round(y + wlen) + 'px');
+      html.style.setProperty('--ll-fade-start', Math.round(y + wlen) + 'px');
+      html.style.setProperty('--ll-fade-end', Math.round(y + wlen + len) + 'px');
     };
     hc.classList.add('ll-sticky-h');
     stickyUpdate();
@@ -370,7 +371,7 @@
         var v = VARS[inp.dataset.var];
         html.style.setProperty(v[2], inp.value + v[5]);
         store.set('v' + v[2], inp.value);
-        if (v[2] === '--ll-sticky-stop' || v[2] === '--ll-fade-len') stickyUpdate();
+        if (v[2] === '--ll-wback-len' || v[2] === '--ll-fade-len') stickyUpdate();
       };
     });
     document.getElementById('ll-reset').onclick = function () {
