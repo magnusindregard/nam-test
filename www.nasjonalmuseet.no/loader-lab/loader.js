@@ -42,7 +42,8 @@
     ['Meny', 'Vekt-tid (ms)', '--ll-menu-wght-dur', 900, 100, 'ms'],
     ['Hover', 'Zoom', '--ll-zoom', 1.05, 0.01, ''],
     ['Hover', 'Zoom-tid (ms)', '--ll-zoom-dur', 450, 50, 'ms'],
-    ['Sticky', 'Vekt tilbake (px scroll)', '--ll-wback-len', 150, 25, 'px'],
+    ['Sticky', 'Vekt ned til', '--ll-wback-to', 300, 10, ''],
+    ['Sticky', 'Vekt ned (px scroll)', '--ll-wback-len', 150, 25, 'px'],
     ['Sticky', 'Fade-lengde (px scroll)', '--ll-fade-len', 400, 25, 'px']
   ];
   function varVal(v) { return store.get('v' + v[2], String(v[3])); }
@@ -313,7 +314,7 @@
   });
 
   /* --- utstillingsside: tittel, nav og logo står stille der de lastes ---
-     Når bildet når opp til tittelen, går tittelen tilbake fra medium til regular over --ll-wback-len px
+     Når bildet når opp til tittelen, går tittelen fra medium ned til --ll-wback-to (tynnest: 300) over --ll-wback-len px
      scroll, og så fader alle ut samtidig over --ll-fade-len px (CSS, scroll-drevet; start/slutt regnes ut her).
      Bilde vokser: fra man begynner å scrolle til bildet når toppen av skjermen, skaleres det opp til det
      dekker hele viewporten. Bildeteksten skyves ned like mye, og plassen er reservert under bildet. */
