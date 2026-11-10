@@ -3,7 +3,8 @@
      ?loader=reveal|title|spinner|dots|bar|fade|curtain|weight|none   (side-loader)
      ?img=fade|blur|skeleton|none                  (bilde-effekt)
      ?hover=zoom|tilt|tight|none                   (hover på kort)
-     ?menu=anim|none  ?sticky=on|off               (meny-animasjon, sticky tittel på utstillingsside)
+     ?menu= ?sticky= ?grow= ?btnw= ?navw=  on|off  (meny-animasjon, sticky tittel/nav og voksende bilde
+                                                    på utstillingsside, vekt ved hover på knapper/nav)
      ?min=600                                      (minimum visningstid i ms)
      ?delay=ms&imgdelay=ms                         (kunstig forsinkelse fra serve.py)
 */
@@ -20,10 +21,18 @@
   var html = document.documentElement;
 
   var hover = store.get('hover', 'zoom');
-  var menu = store.get('menu', 'anim');
-  var sticky = store.get('sticky', 'on');
   html.classList.add('ll-loading', 'll-loader-' + loader, 'll-img-' + img, 'll-hover-' + hover);
-  if (menu === 'anim') html.classList.add('ll-menu-anim');
+
+  /* --- av/på-valg som virker live (klasse på <html>) --- */
+  var TOGGLES = [
+    ['Meny-animasjon', 'menu', 'll-menu-anim'],
+    ['Sticky tittel/nav', 'sticky', 'll-sticky'],
+    ['Bilde vokser', 'grow', 'll-grow'],
+    ['Knapper: vekt ved hover', 'btnw', 'll-btn-wght'],
+    ['Nav: vekt ved hover', 'navw', 'll-nav-wght']
+  ];
+  function isOn(t) { var v = store.get(t[1], 'on'); return v !== 'off' && v !== 'none'; }
+  TOGGLES.forEach(function (t) { html.classList.toggle(t[2], isOn(t)); });
 
   /* --- justerbare CSS-variabler (endres live fra panelet, huskes i localStorage) --- */
   var VARS = [
@@ -34,6 +43,8 @@
     ['Meny', 'Vekt-tid (ms)', '--ll-menu-wght-dur', 900, 100, 'ms'],
     ['Hover', 'Zoom', '--ll-zoom', 1.05, 0.01, ''],
     ['Hover', 'Zoom-tid (ms)', '--ll-zoom-dur', 450, 50, 'ms'],
+    ['Hover', 'Vekt-tid (ms)', '--ll-hw-dur', 250, 50, 'ms'],
+    ['Sticky', 'Nav fader over (px)', '--ll-nav-fade', 200, 25, 'px'],
     ['Sticky', 'Slipp ved (% av bildet)', '--ll-sticky-stop', 50, 5, '']
   ];
   function varVal(v) { return store.get('v' + v[2], String(v[3])); }
@@ -71,7 +82,9 @@
     return '#fff';
   }
   var ROOTS = 'main'; // footeren vises som vanlig
-  var SEL = 'h1, h2, h3, h4, p, li, .ulc-item, figure, picture, img, form, .search-input, a, button';
+  var SEL = 'h1, h2, h3, h4, p, li, .ulc-item, figure, picture, img, form, .search-input, a, button, .hero__type-tag';
+  // Står over tittelen, men skal inn rett etter at tittelen er på plass (ikke i vanlig topp-til-bunn-rekkefølge)
+  var AFTER_TITLE_SEL = '.hero__type-tag';
   // Tagger blokkene i root (ytterste treff vinner, så et kort toner inn som én enhet). Returnerer de nye.
   function tag(root) {
     var added = [];
@@ -92,6 +105,7 @@
       for (var a = el; a && a !== document.body; a = a.parentElement) if (a.__llr) return;
       el.__llr = 1;
       el.classList.add('ll-r');
+      if (el.matches(AFTER_TITLE_SEL)) { el.classList.add('ll-after'); return; }
       added.push(el);
     });
     return added;
@@ -173,7 +187,8 @@
     var delay = Math.round(at - now) + 'ms';
     var isRow = els.length > 1;
     // Etter sidetittelen: lengre pause, så tittelen rekker å komme i gang før ingressen
-    if (els.some(function (el) { return el.tagName === 'H1' || el.querySelector('h1'); })) nextSlot = at + AFTER_TITLE;
+    var isTitle = els.some(function (el) { return el.tagName === 'H1' || el.querySelector('h1'); });
+    if (isTitle) nextSlot = at + AFTER_TITLE;
     els.forEach(function (el) {
       var hs = [].slice.call(el.querySelectorAll('.ll-h'));
       if (el.classList.contains('ll-h')) hs.push(el);
@@ -182,12 +197,17 @@
       // en frame så .ll-row sin startposisjon er på plass før overgangen
       requestAnimationFrame(function () { [el].concat(hs).forEach(function (n) { n.classList.add('ll-in'); }); });
     });
+    if (isTitle) {
+      var after = [].filter.call(document.querySelectorAll('.ll-after'), function (a) { return !a.__lls; });
+      after.forEach(function (a) { a.__lls = 1; });
+      if (after.length) show(after);
+    }
   }
   function startReveal() {
     nextSlot = performance.now() + 200; // logoen først
     revealStarted = true;
     showMenu();
-    var els = document.querySelectorAll('.ll-r:not(.header__nav-item)');
+    var els = document.querySelectorAll('.ll-r:not(.header__nav-item):not(.ll-after)');
     io = 'IntersectionObserver' in window && new IntersectionObserver(function (entries) {
       entries.filter(function (e) { return e.isIntersecting; })
         .map(function (e) { return e.target; })
@@ -252,18 +272,32 @@
   /* --- utstillingsside: tittelen står stille der den lastes til midten av den er --ll-sticky-stop % ned på bildet ---
      Sticky slipper når tittelens margin-boks treffer bunnen av forelderen. Vi gir tittelen en stor
      margin-bottom og trekker bildet like mye opp igjen, så oppsettet er uendret, men slippet skjer
-     på rett sted i bildet. */
+     på rett sted i bildet.
+     Nav og logo står også stille og fader ut (CSS, scroll-drevet).
+     Bilde vokser: fra man begynner å scrolle til bildet når toppen av skjermen, skaleres det opp til det
+     dekker hele viewporten. Bildeteksten skyves ned like mye, og plassen er reservert under bildet. */
   var stickyUpdate = function () {};
   function setupSticky() {
     var hc = document.querySelector('.event-page .hero__heading-container');
     var media = hc && hc.parentElement.querySelector('.hero__media');
     if (!media) return;
     var parent = hc.parentElement;
+    var pic = media.querySelector('.responsive-image__image') || media;
     var hr = hc.getBoundingClientRect();
     var gap = media.getBoundingClientRect().top - hr.bottom;
     // Står der den er når siden er scrollet helt opp (avstanden fra toppen av dokumentet)
     hc.style.setProperty('--ll-sticky-top', Math.round(hr.top + window.scrollY) + 'px');
+    html.classList.add('ll-event');
     stickyUpdate = function () {
+      // Bilde vokser – mål uten skalering (offsetWidth/-Height og forelderens posisjon påvirkes ikke av den)
+      var vw = document.documentElement.clientWidth, vh = window.innerHeight;
+      var mr0 = media.getBoundingClientRect();
+      var s = Math.max(vw / pic.offsetWidth, vh / pic.offsetHeight, 1);
+      html.style.setProperty('--ll-grow-end', Math.max(1, Math.round(mr0.top + window.scrollY)) + 'px');
+      html.style.setProperty('--ll-grow-scale', s.toFixed(4));
+      html.style.setProperty('--ll-grow-extra', Math.round(pic.offsetHeight * (s - 1)) + 'px');
+      pic.style.transformOrigin = Math.round(vw / 2 - mr0.left) + 'px 0';
+
       var on = html.classList.contains('ll-sticky');
       if (!on) { hc.style.marginBottom = media.style.marginTop = ''; return; }
       var stop = (parseFloat(getComputedStyle(html).getPropertyValue('--ll-sticky-stop')) || 50) / 100;
@@ -274,7 +308,6 @@
       media.style.marginTop = (gap - mb) + 'px';
     };
     hc.classList.add('ll-sticky-h');
-    if (sticky === 'on') html.classList.add('ll-sticky');
     stickyUpdate();
     if ('ResizeObserver' in window) new ResizeObserver(function () { stickyUpdate(); }).observe(media);
     window.addEventListener('resize', function () { stickyUpdate(); });
@@ -318,8 +351,9 @@
       '<label>Delay bilder (ms) <input id="ll-imgdelay" type="number" step="250" value="' + (q.get('imgdelay') || cookie('imgdelay')) + '"></label>' +
       '<button id="ll-reload">Last inn på nytt</button>' +
       '<div class="ll-sec">Live <span id="ll-reset">nullstill</span></div>' +
-      '<label>Meny <select id="ll-menu">' + opt(['anim', 'none'], menu) + '</select></label>' +
-      '<label>Sticky tittel <select id="ll-sticky">' + opt(['on', 'off'], sticky) + '</select></label>' +
+      TOGGLES.map(function (t, i) {
+        return '<label>' + t[0] + ' <select data-toggle="' + i + '">' + opt(['on', 'off'], isOn(t) ? 'on' : 'off') + '</select></label>';
+      }).join('') +
       VARS.map(function (v, i) {
         var head = i === 0 || VARS[i - 1][0] !== v[0] ? '<div class="ll-sub">' + v[0] + '</div>' : '';
         return head + '<label>' + v[1] + ' <input data-var="' + i + '" type="number" step="' + v[4] + '" value="' + varVal(v) + '"></label>';
@@ -344,15 +378,14 @@
       });
       stickyUpdate();
     };
-    document.getElementById('ll-menu').onchange = function () {
-      menu = this.value; store.set('menu', menu);
-      html.classList.toggle('ll-menu-anim', menu === 'anim');
-    };
-    document.getElementById('ll-sticky').onchange = function () {
-      sticky = this.value; store.set('sticky', sticky);
-      if (document.querySelector('.ll-sticky-h')) html.classList.toggle('ll-sticky', sticky === 'on');
-      stickyUpdate();
-    };
+    d.querySelectorAll('[data-toggle]').forEach(function (sel) {
+      sel.onchange = function () {
+        var t = TOGGLES[sel.dataset.toggle];
+        store.set(t[1], sel.value);
+        html.classList.toggle(t[2], sel.value === 'on');
+        stickyUpdate();
+      };
+    });
     document.getElementById('ll-toggle').onclick = function () {
       d.classList.toggle('ll-min'); store.set('min_panel', d.classList.contains('ll-min') ? '1' : '');
     };
