@@ -97,6 +97,7 @@
       var src = inner && inner.textContent.trim() === h.textContent.trim() ? inner : h;
       h.style.setProperty('--ll-w', getComputedStyle(src).fontWeight);
       h.classList.add('ll-h');
+      lockLines(h);
     });
     var els = [].slice.call(root.querySelectorAll(SEL));
     if (root.matches && root.matches(SEL)) els.unshift(root);
@@ -109,6 +110,45 @@
     });
     return added;
   }
+  // Lås linjeskiftene i en overskrift slik de blir ved full vekt (den bredeste den animeres til),
+  // så teksten ikke hopper mellom én og to linjer når vekten endres. Gjøres på nytt ved resize.
+  var locked = [];
+  function lockLines(h) {
+    if (h.__llOrig == null) { h.__llOrig = h.innerHTML; locked.push(h); }
+    else h.innerHTML = h.__llOrig;
+    var words = [], walker = document.createTreeWalker(h, NodeFilter.SHOW_TEXT), texts = [];
+    while (walker.nextNode()) texts.push(walker.currentNode);
+    texts.forEach(function (t) {
+      var parts = t.textContent.split(/(\s+)/), frag = document.createDocumentFragment();
+      parts.forEach(function (w) {
+        if (!w) return;
+        if (/^\s+$/.test(w)) { frag.appendChild(document.createTextNode(w)); return; }
+        var s = document.createElement('span'); s.textContent = w; frag.appendChild(s); words.push(s);
+      });
+      t.parentNode.replaceChild(frag, t);
+    });
+    // Mål ved full vekt uten overgang (inline !important slår stilarkets !important)
+    h.style.setProperty('transition', 'none', 'important');
+    h.style.setProperty('font-weight', getComputedStyle(h).getPropertyValue('--ll-w') || '500', 'important');
+    var prev = null;
+    words.forEach(function (s) {
+      var top = s.getBoundingClientRect().top;
+      if (prev != null && top > prev + 2) s.parentNode.insertBefore(document.createElement('br'), s);
+      prev = top;
+    });
+    h.style.whiteSpace = 'nowrap';
+    h.style.removeProperty('font-weight');
+    getComputedStyle(h).fontWeight; // ta i bruk vekten igjen før overgangen kommer tilbake
+    h.style.removeProperty('transition');
+  }
+  var relockT;
+  window.addEventListener('resize', function () {
+    clearTimeout(relockT);
+    relockT = setTimeout(function () {
+      locked.forEach(function (h) { h.style.whiteSpace = ''; lockLines(h); });
+    }, 150);
+  });
+
   // Når en overskrift har nådd vekten sin: merk den, så vekt-endringer etterpå (scroll) ikke glattes av overgangen
   document.addEventListener('transitionend', function (e) {
     if (e.propertyName === 'font-weight' && e.target.classList && e.target.classList.contains('ll-h')) e.target.classList.add('ll-h-done');
