@@ -45,6 +45,7 @@
     ['Innlasting', 'Steg per linje (ms)', '--ll-step', 120, 10, 'ms'],
     ['Innlasting', 'Steg per kort (ms)', '--ll-row-step', 90, 10, 'ms'],
     ['Innlasting', 'Vertikal bevegelse (px)', '--ll-shift', 10, 2, 'px'],
+    ['Innlasting', 'Liste-rader spredt (px)', '--ll-spread', 40, 5, 'px'],
     ['Overskrift', 'Vekt fra', '--ll-h-from', 300, 10, ''],
     ['Overskrift', 'Vekt-tid (ms)', '--ll-h-duration', 1000, 100, 'ms'],
     ['Overskrift', 'Min. str. (px, last på nytt)', '--ll-h-min', 28, 2, 'px'],
@@ -56,7 +57,7 @@
     ['Hover', 'Zoom-tid (ms)', '--ll-zoom-dur', 450, 50, 'ms'],
     ['Hover', 'Vekt-tid lister (ms)', '--ll-hw-dur', 300, 50, 'ms'],
     ['Hover', 'Pil-knapp fade (ms)', '--ll-pill-dur', 150, 25, 'ms'],
-    ['Hover', 'Pil sprett (px)', '--ll-arrow-shift', 12, 2, 'px'],
+    ['Hover', 'Pil sprett (px)', '--ll-arrow-shift', 4, 1, 'px'],
     ['Parallax', 'Styrke (%)', '--ll-parallax', 15, 1, ''],
     ['Bakgrunn', 'Ovenfra-tid (ms)', '--ll-wipe-dur', 700, 50, 'ms'],
     ['Sticky', 'Vekt ned til', '--ll-wback-to', 300, 10, ''],
@@ -100,7 +101,9 @@
     return '#fff';
   }
   var ROOTS = 'main'; // footeren vises som vanlig
-  var SEL = 'h1, h2, h3, h4, p, li, .ulc-item, figure, picture, img, form, .search-input, a, button, .hero__type-tag';
+  var SEL = 'h1, h2, h3, h4, p, li, .ulc-item, .category-list-block__item, figure, picture, img, form, .search-input, a, button, .hero__type-tag';
+  // Enheter med mange små bilder: vent ikke på bildene (de toner inn selv), og la radene starte spredt og gli sammen
+  var NO_WAIT_SEL = '.category-list-block__item', SPREAD_SEL = '.category-list-block__item';
   // Står over tittelen, men skal inn rett etter at tittelen er på plass (ikke i vanlig topp-til-bunn-rekkefølge)
   var AFTER_TITLE_SEL = '.hero__type-tag';
   function isBlock(el) {
@@ -137,6 +140,10 @@
       el.__llr = 1;
       el.classList.add('ll-r');
       if (el.matches(AFTER_TITLE_SEL)) { el.classList.add('ll-after'); return; }
+      if (el.matches(SPREAD_SEL)) {
+        el.classList.add('ll-spread');
+        el.style.setProperty('--ll-si', [].indexOf.call(el.parentElement.children, el));
+      }
       // Avsnitt kommer inn linje for linje
       if (el.tagName === 'P' && el.textContent.trim()) { el.__llWords = wrapWords(el, 'll-wd'); el.classList.add('ll-lines'); }
       added.push(el);
@@ -266,7 +273,7 @@
   function whenReady(els, cb) {
     var start = performance.now();
     (function check() {
-      var pending = els.filter(onScreenX).some(function (e) {
+      var pending = els.filter(onScreenX).filter(function (e) { return !e.matches(NO_WAIT_SEL); }).some(function (e) {
         if (e.tagName === 'IMG' && !e.complete) return true;
         return [].some.call(e.querySelectorAll('img'), function (i) { return !i.complete; });
       });
@@ -362,6 +369,14 @@
         })
         .forEach(function (el) {
           if (el.__lls) return;
+          // Spredte liste-rader: hele blokken etter hverandre (de nederste ligger ofte utenfor en
+          // klippende forelder til de har glidd på plass, så observeren ville aldri sett dem)
+          if (el.matches(SPREAD_SEL)) {
+            var rows = [].filter.call(el.parentElement.children, function (c) { return c.__llr && !c.__lls && c.matches(SPREAD_SEL); });
+            rows.forEach(function (g) { g.__lls = 1; io.unobserve(g); });
+            rows.forEach(function (g) { show([g]); });
+            return;
+          }
           var group = rowOf(el);
           group.forEach(function (g) { g.__lls = 1; io.unobserve(g); });
           whenReady(group, function () { show(group); });

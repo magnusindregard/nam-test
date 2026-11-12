@@ -166,6 +166,13 @@ html.ll-loader-reveal .ll-r.ll-in:not(.ll-row):not(.ll-lines) {
   translate: none;
   transition: opacity var(--ll-r-duration) ease-out, translate var(--ll-shift-duration) var(--ll-r-ease);
 }
+/* Liste-rader («Utforsk videre»): starter med stor avstand (rad i ligger i × --ll-spread lenger ned) og glir sammen */
+:root { --ll-spread: 40px; --ll-spread-dur: 900ms; }
+html.ll-loader-reveal .ll-r.ll-spread:not(.ll-row):not(.ll-lines) { translate: 0 calc(var(--ll-shift) + var(--ll-si, 0) * var(--ll-spread)); }
+html.ll-loader-reveal .ll-r.ll-spread.ll-in:not(.ll-row):not(.ll-lines) {
+  translate: none;
+  transition: opacity var(--ll-r-duration) ease-out, translate var(--ll-spread-dur) var(--ll-r-ease);
+}
 /* Overskrifter: behold vekt-overgangen (regelen over er mer spesifikk enn .ll-h.ll-in) */
 html.ll-loader-reveal .ll-h.ll-r.ll-in:not(.ll-row):not(.ll-lines) {
   transition: font-weight var(--ll-h-duration) var(--ll-r-ease), opacity var(--ll-r-duration) ease-out,
@@ -357,8 +364,8 @@ html.ll-event.ll-sticky .site-layout { background-color: var(--ll-event-bg, #000
    (neste seksjon ligger ellers oppå). Bevegelse og farger ligger på ::before og barna (ikke lenken), så de
    ikke arver reveal sin transition-delay. */
 :root {
-  --ll-pill-dur: 150ms; --ll-pill-py: 8px; --ll-pill-px: 16px; --ll-pill-radius: 4px; --ll-pill-move-dur: 300ms;
-  --ll-arrow-shift: 12px; --ll-arrow-dur: 300ms; --ll-arrow-ease: cubic-bezier(.34, 1.56, .64, 1);
+  --ll-pill-dur: 150ms; --ll-pill-py: 4px; --ll-pill-px: 16px; --ll-pill-radius: 4px; --ll-pill-move-dur: 300ms;
+  --ll-arrow-shift: 4px; --ll-arrow-dur: 300ms; --ll-arrow-ease: cubic-bezier(.34, 1.56, .64, 1);
 }
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) {
   position: relative; isolation: isolate;
