@@ -362,6 +362,7 @@
       var r = el.getBoundingClientRect();
       if (r.height < 40 || r.top >= window.innerHeight) return;
       el.style.setProperty('--ll-top', Math.round(r.top) + 'px');
+      el.style.setProperty('--ll-wipe-under', bgOf(el.parentElement && el.parentElement.parentElement || document.body));
       el.classList.add('ll-wipe-media');
       wipeEls.push(el);
       // Logoen ligger på video: ikke «spis» formen med en strek i bakgrunnsfarge, bare tone inn
@@ -382,7 +383,7 @@
     (function check() {
       var w = parseFloat(getComputedStyle(html).getPropertyValue('--ll-wipe')) || 0;
       if (w >= target || !html.classList.contains('ll-wipe-run')) html.classList.add('ll-logo-go');
-      else requestAnimationFrame(check);
+      else setTimeout(check, 50); // ikke hver frame – lesingen tvinger fram stilberegning
     })();
   }
   function startWipe() {
@@ -429,12 +430,28 @@
     els.forEach(function (el) { io.observe(el); });
   }
 
+  var MEDIA_WAIT = 2500;
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function inFirstView(el) { var r = el.getBoundingClientRect(); return r.bottom > 0 && r.top < window.innerHeight && r.width > 0; }
+  function once(el, evs) { return new Promise(function (r) { evs.forEach(function (e) { el.addEventListener(e, r, { once: true }); }); }); }
+  function mediaReady() {
+    var vids = [].filter.call(document.querySelectorAll('main video'), inFirstView).map(function (v) {
+      return v.readyState >= 3 ? 1 : once(v, ['canplay', 'error']);
+    });
+    var imgs = [].filter.call(document.querySelectorAll('main img'), inFirstView).map(function (i) {
+      return i.complete ? (i.decode ? i.decode().catch(function () {}) : 1) : once(i, ['load', 'error']);
+    });
+    return Promise.all(vids.concat(imgs));
+  }
   if (loader === 'title' || loader === 'reveal') {
     // Ikke vent på alle bildene: vis siden når HTML-en er klar og den variable fonten er lastet.
+    // reveal: vent også på video og bilder i første skjermbilde (maks MEDIA_WAIT), så animasjonene
+    // ikke konkurrerer med lasting og dekoding.
     document.addEventListener('DOMContentLoaded', function () {
       var f = document.fonts ? document.fonts.load('300 1em "MuseetSansVF-lab"') : Promise.resolve();
-      var ready = loader === 'reveal' ? Promise.all([f, hydrated]) : f;
-      var timeout = new Promise(function (r) { setTimeout(r, 3000); });
+      var media = hydrated.then(function () { return Promise.race([mediaReady(), wait(MEDIA_WAIT)]); });
+      var ready = loader === 'reveal' ? Promise.all([f, hydrated, media]) : f;
+      var timeout = wait(MEDIA_WAIT + 1500);
       Promise.race([ready, timeout]).then(function () {
         if (loader === 'reveal') setupReveal();
         requestAnimationFrame(function () { requestAnimationFrame(done); });

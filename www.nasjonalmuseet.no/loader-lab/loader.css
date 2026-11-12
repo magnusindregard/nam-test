@@ -391,6 +391,12 @@ html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__
   color: var(--ll-pill-fg); translate: var(--ll-pill-px) 0;
 }
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) .button__text { text-decoration: none !important; }
+/* Pila midtstilt mot teksten (SVG-en lå inline på grunnlinjen) */
+html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) { align-items: center; }
+html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) > span:not(.button__text) {
+  display: inline-flex; align-items: center; border-bottom: 0;
+}
+html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) svg { display: block; }
 /* Pila er en SVG med fast fill (ikke currentColor) */
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) svg path {
   fill: currentColor; transition: fill var(--ll-pill-dur) cubic-bezier(.4, 0, .2, 1);
@@ -442,10 +448,15 @@ html.ll-loader-reveal .ll-wipe {
   background-position: 0 0 !important;
   background-size: 100% clamp(0px, calc(var(--ll-wipe) - var(--ll-top)), 100%) !important;
 }
-/* Bilde/video-bakgrunner (forsidevideoen) klippes ovenfra og ned med samme linje */
-html.ll-loader-reveal .ll-wipe-media {
-  clip-path: inset(0 0 calc(100% - clamp(0px, calc(var(--ll-wipe) - var(--ll-top)), 100%)) 0);
+/* Bilde/video-bakgrunner (forsidevideoen): et dekklag i sidens farge krymper mot bunnen, så videoen kommer
+   til syne ovenfra. transform (ikke clip-path) så nettleseren kan gjøre det på GPU-en uten å male videoen på nytt. */
+html.ll-loader-reveal .ll-wipe-media::after {
+  content: ""; position: absolute; inset: 0; z-index: 5; pointer-events: none;
+  background: var(--ll-wipe-under, #fff);
+  transform-origin: 50% 100%; will-change: transform;
 }
+html.ll-wipe-run .ll-wipe-media::after { animation: ll-wipe-cover var(--ll-wipe-dur) var(--ll-wipe-ease) both; }
+@keyframes ll-wipe-cover { from { transform: scaleY(1); } to { transform: scaleY(0); } }
 @media (prefers-reduced-motion: reduce) {
   html.ll-wipe-run { animation-duration: 1ms; }
 }
