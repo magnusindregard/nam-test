@@ -351,34 +351,36 @@ html.ll-event.ll-sticky .site-layout { background-color: var(--ll-event-bg, #000
 }
 
 /* ---------- Pil-lenke som knapp (?arrowbtn=on|off) – som david-andersen.no ----------
-   «Se alle … →»: ved hover tones en sort knapp raskt inn bak teksten (skarpe hjørner), tekst og pil blir hvite,
-   og pila spretter litt til høyre (spring-kurve med overskyting). Ingen understrek.
-   Padding + like stor negativ margin oppe og på sidene, så teksten står på samme sted. Nederst tar
-   paddingen plass – neste seksjon ligger ellers oppå (den maler over alt som stikker ut). Til høyre er det
-   ekstra plass til pila. Bakgrunn og farger ligger på ::before og barna (ikke lenken), så de ikke arver
-   reveal sin transition-delay. */
+   «Se alle … →»: i ro står teksten venstrestilt som vanlig. Ved hover tones en sort knapp (radius 4px) inn,
+   teksten glir inn til knappens padding, tekst og pil blir hvite, og pila spretter litt til høyre.
+   Knappen er ::before, som stikker ut over og til høyre for lenken. Nederst tar paddingen plass i layouten
+   (neste seksjon ligger ellers oppå). Bevegelse og farger ligger på ::before og barna (ikke lenken), så de
+   ikke arver reveal sin transition-delay. */
 :root {
-  --ll-pill-dur: 150ms; --ll-pill-py: 8px; --ll-pill-px: 16px; --ll-pill-radius: 4px;
+  --ll-pill-dur: 150ms; --ll-pill-py: 8px; --ll-pill-px: 16px; --ll-pill-radius: 4px; --ll-pill-move-dur: 300ms;
   --ll-arrow-shift: 12px; --ll-arrow-dur: 300ms; --ll-arrow-ease: cubic-bezier(.34, 1.56, .64, 1);
 }
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) {
   position: relative; isolation: isolate;
-  padding: var(--ll-pill-py) calc(var(--ll-pill-px) + var(--ll-arrow-shift)) var(--ll-pill-py) var(--ll-pill-px) !important;
-  margin: calc(-1 * var(--ll-pill-py)) calc(-1 * var(--ll-pill-px) - var(--ll-arrow-shift)) 0 calc(-1 * var(--ll-pill-px));
+  padding: 0 0 var(--ll-pill-py) 0 !important;
   border-bottom-color: transparent !important;
   --ll-pill-bg: #000; --ll-pill-fg: #fff;
 }
 html.ll-arrow-btn :is(a, button).button--theme-arrow__inverted { --ll-pill-bg: #fff; --ll-pill-fg: #000; }
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted)::before {
-  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--ll-pill-radius);
+  content: ""; position: absolute; z-index: -1; border-radius: var(--ll-pill-radius);
+  top: calc(-1 * var(--ll-pill-py)); bottom: 0; left: 0;
+  right: calc(-2 * var(--ll-pill-px) - var(--ll-arrow-shift));
   background: var(--ll-pill-bg); opacity: 0;
   transition: opacity var(--ll-pill-dur) cubic-bezier(.4, 0, .2, 1);
 }
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) > * {
-  transition: color var(--ll-pill-dur) cubic-bezier(.4, 0, .2, 1);
+  transition: color var(--ll-pill-dur) cubic-bezier(.4, 0, .2, 1), translate var(--ll-pill-move-dur) var(--ll-r-ease);
 }
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted):is(:hover, :focus-visible)::before { opacity: 1; }
-html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted):is(:hover, :focus-visible) > * { color: var(--ll-pill-fg); }
+html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted):is(:hover, :focus-visible) > * {
+  color: var(--ll-pill-fg); translate: var(--ll-pill-px) 0;
+}
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) .button__text { text-decoration: none !important; }
 /* Pila er en SVG med fast fill (ikke currentColor) */
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) svg path {
@@ -438,7 +440,7 @@ html.ll-loader-reveal .ll-wipe {
 /* ---------- Knapper med fyll: pil ved hover (?btnarrow=on|off) ----------
    Pila (.ll-btn-arrow, lagt inn i JS) har 0 bredde og -gap margin til vanlig, og vokser inn ved hover,
    så knappen blir bredere. Pila glir litt inn fra venstre. */
-:root { --ll-btn-arrow-w: 16px; --ll-btn-arrow-dur: 300ms; }
+:root { --ll-btn-arrow-w: 32px; --ll-btn-arrow-dur: 300ms; }
 .ll-btn-arrow { display: none; }
 html.ll-btn-arrow-on .ll-btn-arrow {
   display: inline-flex; align-items: center; overflow: hidden; flex-shrink: 0;

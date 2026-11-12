@@ -463,7 +463,8 @@
 
   /* --- knapper med fyll: pil etter teksten ved hover (bredden animeres i CSS) ---
      Bare knapper med tekst og uten eget ikon. */
-  var ARROW_SVG = '<svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M3 10h13M11 5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
+  // Samme lange pil som «Se alle …»-lenkene (fill: currentColor, så den følger knappens tekstfarge)
+  var ARROW_SVG = '<svg viewBox="0 0 31 12" width="32" height="12" fill="none" aria-hidden="true"><path d="M0 5.33333L28.4167 5.33333L23.25 0L25.1875 0L31 6L25.1875 12H23.25L28.4167 6.66667L0 6.66667L0 5.33333Z" fill="currentColor"/></svg>';
   function addArrows(root) {
     if (!root.querySelectorAll) return;
     var list = [].slice.call(root.querySelectorAll('.button'));
