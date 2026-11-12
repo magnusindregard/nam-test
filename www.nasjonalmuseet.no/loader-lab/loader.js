@@ -60,10 +60,8 @@
     ['Hover', 'Pil-knapp fade (ms)', '--ll-pill-dur', 150, 25, 'ms'],
     ['Hover', 'Pil sprett (px)', '--ll-arrow-shift', 4, 1, 'px'],
     ['Hover', 'Pil avstand (px)', '--ll-arrow-gap', 6, 1, 'px'],
-    ['Parallax', 'Styrke (%)', '--ll-parallax', 15, 1, ''],
+    ['Parallax', 'Styrke (%)', '--ll-parallax', 25, 1, ''],
     ['Bakgrunn', 'Ovenfra-tid (ms)', '--ll-wipe-dur', 700, 50, 'ms'],
-    ['Sticky', 'Vekt ned til', '--ll-wback-to', 300, 10, ''],
-    ['Sticky', 'Vekt ned (px scroll)', '--ll-wback-len', 150, 25, 'px'],
     ['Sticky', 'Fade-lengde (px scroll)', '--ll-fade-len', 400, 25, 'px']
   ];
   function varVal(v) { return store.get('v' + v[2], String(v[3])); }
@@ -517,8 +515,8 @@
   });
 
   /* --- utstillingsside: tittel, nav og logo står stille der de lastes ---
-     Når bildet når opp til tittelen, går tittelen fra medium ned til --ll-wback-to (tynnest: 300) over --ll-wback-len px
-     scroll, og så fader alle ut samtidig over --ll-fade-len px (CSS, scroll-drevet; start/slutt regnes ut her).
+     Når bildet når opp til tittelen, fader alle ut samtidig over --ll-fade-len px scroll
+     (CSS, scroll-drevet; start/slutt regnes ut her). Tittelen blandes med bildet (mix-blend-mode: difference).
      Bilde vokser: fra man begynner å scrolle til bildet når toppen av skjermen, skaleres det opp til det
      dekker hele viewporten. Bildeteksten skyves ned like mye, og plassen er reservert under bildet. */
   var stickyUpdate = function () {};
@@ -548,13 +546,10 @@
 
       // Bildet når opp til tittelen (toppen av bildet flytter seg ikke når det vokser – origin er øverst)
       var cs = getComputedStyle(html);
-      var wlen = parseFloat(cs.getPropertyValue('--ll-wback-len')) || 0;
       var len = parseFloat(cs.getPropertyValue('--ll-fade-len')) || 400;
       var y = Math.max(0, Math.round(mediaTop - (top0 + hc.offsetHeight)));
-      html.style.setProperty('--ll-wght-start', y + 'px');
-      html.style.setProperty('--ll-wght-end', Math.round(y + wlen) + 'px');
-      html.style.setProperty('--ll-fade-start', Math.round(y + wlen) + 'px');
-      html.style.setProperty('--ll-fade-end', Math.round(y + wlen + len) + 'px');
+      html.style.setProperty('--ll-fade-start', y + 'px');
+      html.style.setProperty('--ll-fade-end', Math.round(y + len) + 'px');
     };
     hc.classList.add('ll-sticky-h');
     stickyUpdate();
@@ -647,7 +642,7 @@
         var v = VARS[inp.dataset.var];
         html.style.setProperty(v[2], inp.value + v[5]);
         store.set('v' + v[2], inp.value);
-        if (v[2] === '--ll-wback-len' || v[2] === '--ll-fade-len') stickyUpdate();
+        if (v[2] === '--ll-fade-len') stickyUpdate();
       };
     });
     document.getElementById('ll-reset').onclick = function () {
