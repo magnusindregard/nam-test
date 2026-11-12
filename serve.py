@@ -115,7 +115,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # Undersider: hent uten loader-lab-parametrene, og cache HTML-en
             parts = urllib.parse.urlsplit(self.path)
             q = [(k, v) for k, v in urllib.parse.parse_qsl(parts.query, keep_blank_values=True)
-                 if k not in ("loader", "img", "min", "hover", "menu", "sticky", "grow", "arrowbtn", "parallax", "wipe", "btnarrow", "delay", "imgdelay", "headline")]
+                 if k not in ("loader", "img", "min", "hover", "menu", "sticky", "grow", "arrowbtn", "parallax", "wipe", "btnarrow", "listw", "menuwipe", "delay", "imgdelay", "headline")]
             url = UPSTREAM + parts.path + ("?" + urllib.parse.urlencode(q) if q else "")
         if url in PAGE_CACHE:
             ctype, body = PAGE_CACHE[url]

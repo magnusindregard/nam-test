@@ -277,13 +277,13 @@ html.ll-hover-zoom :is(.ulc-item, .promo-card, .theme-card):is(:hover, :focus-vi
 :root { --ll-menu-step: 25ms; --ll-menu-dur: 250ms; --ll-menu-wght-dur: 900ms; }
 html.ll-menu-anim .ll-mi {
   animation: ll-mi-in var(--ll-menu-dur) ease-out backwards;
-  animation-delay: calc(var(--ll-i, 0) * var(--ll-menu-step));
+  animation-delay: calc(var(--ll-menu-base, 0ms) + var(--ll-i, 0) * var(--ll-menu-step));
 }
 @keyframes ll-mi-in { from { opacity: 0; } }
 html.ll-menu-anim .ll-mt {
   font-family: "MuseetSansVF-lab", sans-serif !important;
   animation: ll-mt-wght var(--ll-menu-wght-dur) var(--ll-r-ease) backwards;
-  animation-delay: calc(var(--ll-i, 0) * var(--ll-menu-step));
+  animation-delay: calc(var(--ll-menu-base, 0ms) + var(--ll-i, 0) * var(--ll-menu-step));
 }
 @keyframes ll-mt-wght { from { font-weight: var(--ll-h-from, 300); } to { font-weight: var(--ll-w, 400); } }
 
@@ -453,4 +453,41 @@ html.ll-btn-arrow-on .button:is(:hover, :focus-visible) > .ll-btn-arrow { width:
 html.ll-btn-arrow-on .button:is(:hover, :focus-visible) > .ll-btn-arrow svg { opacity: 1; translate: none; }
 @media (prefers-reduced-motion: reduce) {
   html.ll-loader-reveal .ll-r, html.ll-loader-reveal .ll-wd { translate: none !important; }
+}
+
+/* ---------- Lister: vekt ved hover (?listw=on|off) ----------
+   «Utforsk andre verk» (Maleri, Olje …) og trekkspill (Verksinformasjon …): regular → medium ved hover. */
+:root { --ll-hw-dur: 300ms; }
+html.ll-list-wght :is(.category-list-block__item-link-text, .accordion-block__trigger > span) {
+  font-family: "MuseetSansVF-lab", sans-serif !important;
+  transition: font-weight var(--ll-hw-dur) var(--ll-r-ease);
+}
+html.ll-list-wght :is(.category-list-block__item-container:hover .category-list-block__item-link-text,
+                      .category-list-block__item-link:focus-visible .category-list-block__item-link-text,
+                      .accordion-block__trigger:is(:hover, :focus-visible) > span) {
+  font-weight: 500;
+}
+
+/* ---------- Meny-bakgrunn ovenfra (?menuwipe=on|off) ----------
+   Erstatter sidens «gardin» (høyde + opacity): bakgrunnen fylles ovenfra og ned når menyen åpnes,
+   og trekkes opp igjen når den lukkes. Innholdet fader raskt ut ved lukking; punktene venter litt ved åpning. */
+:root { --ll-menu-wipe-dur: 500ms; --ll-menu-wipe-ease: cubic-bezier(.65, .05, .36, 1); }
+@property --ll-mwipe { syntax: "<length-percentage>"; inherits: false; initial-value: 100%; }
+html.ll-menu-wipe { --ll-menu-base: calc(var(--ll-menu-wipe-dur) * .35); }
+html.ll-menu-wipe .menu {
+  background-color: transparent !important;
+  background-image: linear-gradient(#000, #000);
+  background-repeat: no-repeat; background-position: 0 0;
+  background-size: 100% var(--ll-mwipe);
+}
+html.ll-menu-wipe :is(.menu-new__curtain--enter-active, .menu-new__curtain--leave-active) { transition: none !important; }
+html.ll-menu-wipe :is(.menu-new__curtain--enter-from, .menu-new__curtain--enter-to,
+                      .menu-new__curtain--leave-from, .menu-new__curtain--leave-to) { opacity: 1 !important; height: 100vh !important; }
+html.ll-menu-wipe .menu-new__curtain--enter-active { animation: ll-mwipe-in var(--ll-menu-wipe-dur) var(--ll-menu-wipe-ease) both; }
+html.ll-menu-wipe .menu-new__curtain--leave-active { animation: ll-mwipe-out var(--ll-menu-wipe-dur) var(--ll-menu-wipe-ease) both; }
+html.ll-menu-wipe .menu-new__curtain--leave-active .menu__wrapper { opacity: 0; transition: opacity 150ms ease-out; }
+@keyframes ll-mwipe-in { from { --ll-mwipe: 0%; } to { --ll-mwipe: 100%; } }
+@keyframes ll-mwipe-out { from { --ll-mwipe: 100%; } to { --ll-mwipe: 0%; } }
+@media (prefers-reduced-motion: reduce) {
+  html.ll-menu-wipe :is(.menu-new__curtain--enter-active, .menu-new__curtain--leave-active) { animation-duration: 1ms; }
 }

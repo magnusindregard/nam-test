@@ -32,7 +32,9 @@
     ['Pil-lenke som knapp', 'arrowbtn', 'll-arrow-btn'],
     ['Parallax på promo-bilder', 'parallax', 'll-parallax'],
     ['Mørk bakgrunn ovenfra', 'wipe', 'll-wipe-on'],
-    ['Knapper: pil ved hover', 'btnarrow', 'll-btn-arrow-on']
+    ['Knapper: pil ved hover', 'btnarrow', 'll-btn-arrow-on'],
+    ['Lister: vekt ved hover', 'listw', 'll-list-wght'],
+    ['Meny-bakgrunn ovenfra', 'menuwipe', 'll-menu-wipe']
   ];
   function isOn(t) { var v = store.get(t[1], 'on'); return v !== 'off' && v !== 'none'; }
   TOGGLES.forEach(function (t) { html.classList.toggle(t[2], isOn(t)); });
@@ -49,8 +51,10 @@
     ['Meny', 'Steg (ms)', '--ll-menu-step', 25, 5, 'ms'],
     ['Meny', 'Fade (ms)', '--ll-menu-dur', 250, 50, 'ms'],
     ['Meny', 'Vekt-tid (ms)', '--ll-menu-wght-dur', 900, 100, 'ms'],
+    ['Meny', 'Bakgrunn (ms)', '--ll-menu-wipe-dur', 500, 50, 'ms'],
     ['Hover', 'Zoom', '--ll-zoom', 1.05, 0.01, ''],
     ['Hover', 'Zoom-tid (ms)', '--ll-zoom-dur', 450, 50, 'ms'],
+    ['Hover', 'Vekt-tid lister (ms)', '--ll-hw-dur', 300, 50, 'ms'],
     ['Hover', 'Pil-knapp fade (ms)', '--ll-pill-dur', 150, 25, 'ms'],
     ['Hover', 'Pil sprett (px)', '--ll-arrow-shift', 12, 2, 'px'],
     ['Parallax', 'Styrke (%)', '--ll-parallax', 15, 1, ''],
