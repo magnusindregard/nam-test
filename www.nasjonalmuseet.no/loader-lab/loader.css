@@ -576,6 +576,11 @@ html.ll-loader-reveal.ll-hero-img .collection-item-image-new a.ll-r.ll-in .colle
 html.ll-loader-reveal.ll-hero-img .collection-item-image-new a.ll-r.ll-in .collection-item-image-new__image-inner-wrapper img {
   scale: 1; transition-property: opacity, scale; transition-duration: 500ms, var(--ll-hero-dur); transition-timing-function: ease, var(--ll-hero-ease);
 }
+/* Forsidevideoen har egen ramme og tid (starter mindre, varer lenger) – arves av rammen, videoen og gradienten */
+:root { --ll-video-inset: 12; --ll-video-dur: 2000ms; }
+html.ll-hero-img .block-banner__background {
+  --ll-hero-frame: calc(1 - var(--ll-video-inset) * .02); --ll-hero-dur: var(--ll-video-dur);
+}
 /* Forsidevideoen er skjult til bakgrunnen bak er fylt inn (.ll-hero-go). Sidens skygge-gradient over videoen
    (::after) følger videoen – ellers ligger den grå over den hvite siden mens bakgrunnen fylles. */
 html.ll-loader-reveal.ll-hero-img .ll-hero-frame { opacity: 0; }

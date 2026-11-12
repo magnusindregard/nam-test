@@ -69,6 +69,8 @@
     ['Stort bilde', 'Zoom fra', '--ll-hero-zoom', 1.15, 0.01, ''],
     ['Stort bilde', 'Ramme fra (% inn)', '--ll-hero-inset', 6, 1, ''],
     ['Stort bilde', 'Tid (ms)', '--ll-hero-dur', 1400, 100, 'ms'],
+    ['Forsidevideo', 'Ramme fra (% inn)', '--ll-video-inset', 12, 1, ''],
+    ['Forsidevideo', 'Tid (ms)', '--ll-video-dur', 2000, 100, 'ms'],
     ['Sticky', 'Fader ved (% av bildet)', '--ll-sticky-stop', 45, 5, ''],
     ['Sticky', 'Fade-lengde (px scroll)', '--ll-fade-len', 100, 25, 'px']
   ];
@@ -271,7 +273,7 @@
   function showMenu() {
     document.querySelectorAll('.header__nav-item').forEach(function (el) {
       // Forsiden med video: nav kommer når videoen er på vei inn
-      el.style.transitionDelay = (heroFrame ? Math.max(MENU_DELAY, num('--ll-hero-dur') * 0.35) : MENU_DELAY) + 'ms';
+      el.style.transitionDelay = (heroFrame ? Math.max(MENU_DELAY, num('--ll-video-dur') * 0.35) : MENU_DELAY) + 'ms';
       requestAnimationFrame(function () { el.classList.add('ll-in'); });
     });
   }
@@ -479,7 +481,7 @@
     startWipe();
     // logoen først, så innholdet – og bakgrunnen først hvis den fylles inn
     nextSlot = performance.now() + Math.max(num('--ll-start'), wipeEls.length ? num('--ll-wipe-dur') : 0,
-                                            heroFrame ? num('--ll-hero-dur') * 0.5 : 0);
+                                            heroFrame ? num('--ll-video-dur') * 0.5 : 0);
     revealStarted = true;
     showMenu();
     var els = document.querySelectorAll('.ll-r:not(.header__nav-item):not(.ll-after)');
