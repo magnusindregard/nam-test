@@ -472,6 +472,13 @@
     list.forEach(function (b) {
       if (b.__lla || /theme-arrow|icon-only/.test(b.className) || b.querySelector('.button__icon, .icon') || !b.textContent.trim()) return;
       b.__lla = 1;
+      // Husk fargene i ro, så hover kan beholde dem
+      var cs = getComputedStyle(b);
+      b.style.setProperty('--ll-btn-bg', cs.backgroundColor);
+      b.style.setProperty('--ll-btn-fg', cs.color);
+      b.style.setProperty('--ll-btn-bd', cs.borderTopColor);
+      b.style.setProperty('--ll-btn-bb', cs.borderBottomWidth + ' ' + cs.borderBottomStyle + ' ' + cs.borderBottomColor);
+      b.classList.add('ll-has-arrow');
       var s = document.createElement('span');
       s.className = 'll-btn-arrow'; s.setAttribute('aria-hidden', 'true'); s.innerHTML = ARROW_SVG;
       b.appendChild(s);

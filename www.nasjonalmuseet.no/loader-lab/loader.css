@@ -452,21 +452,31 @@ html.ll-btn-arrow-on .ll-btn-arrow svg {
   transition: opacity var(--ll-btn-arrow-dur) ease, translate var(--ll-btn-arrow-dur) var(--ll-r-ease);
 }
 html.ll-btn-arrow-on .button:is(:hover, :focus-visible) > .ll-btn-arrow { width: var(--ll-btn-arrow-w); margin-left: 0; }
+/* Knappen beholder fargene sine ved hover (sidens egen hover gjør den grå/invertert) – pila er hover-effekten */
+html.ll-btn-arrow-on .button.ll-has-arrow:is(:hover, :focus-visible):not(:disabled) {
+  background-color: var(--ll-btn-bg) !important; color: var(--ll-btn-fg) !important;
+  border-color: var(--ll-btn-bd) !important; border-bottom: var(--ll-btn-bb) !important;
+}
 html.ll-btn-arrow-on .button:is(:hover, :focus-visible) > .ll-btn-arrow svg { opacity: 1; translate: none; }
 @media (prefers-reduced-motion: reduce) {
   html.ll-loader-reveal .ll-r, html.ll-loader-reveal .ll-wd { translate: none !important; }
 }
 
 /* ---------- Lister: vekt ved hover (?listw=on|off) ----------
-   «Utforsk andre verk» (Maleri, Olje …) og trekkspill (Verksinformasjon …): regular → medium ved hover. */
+   «Utforsk andre verk» (Maleri, Olje …) og trekkspill (Verksinformasjon …): regular → medium ved hover.
+   Hover gjelder bare selve teksten, ikke hele raden: lenken i «Utforsk andre verk» er ellers like bred som
+   kolonnen (og sidens egen pil kommer på lenke-hover), så den gjøres bare så bred som innholdet. */
 :root { --ll-hw-dur: 300ms; }
+html.ll-list-wght .category-list-block__item-link { width: fit-content; max-width: 100%; }
+/* Trekkspill: teksten fyller ellers raden (flex: 1); knappen er space-between, så pluss-ikonet blir stående */
+html.ll-list-wght .accordion-block__trigger > span { flex: 0 1 auto; }
 html.ll-list-wght :is(.category-list-block__item-link-text, .accordion-block__trigger > span) {
   font-family: "MuseetSansVF-lab", sans-serif !important;
   transition: font-weight var(--ll-hw-dur) var(--ll-r-ease);
 }
-html.ll-list-wght :is(.category-list-block__item-container:hover .category-list-block__item-link-text,
-                      .category-list-block__item-link:focus-visible .category-list-block__item-link-text,
-                      .accordion-block__trigger:is(:hover, :focus-visible) > span) {
+html.ll-list-wght :is(.category-list-block__item-link:is(:hover, :focus-visible) .category-list-block__item-link-text,
+                      .accordion-block__trigger > span:hover,
+                      .accordion-block__trigger:focus-visible > span) {
   font-weight: 500;
 }
 
