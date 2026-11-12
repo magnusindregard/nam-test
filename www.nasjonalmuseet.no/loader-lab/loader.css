@@ -610,3 +610,8 @@ html.ll-loader-reveal.ll-hero-img.ll-hero-go .ll-hero-frame video {
   html.ll-loader-reveal.ll-hero-img :is(.event-page .hero__media figure.ll-r :is(picture, img), .ll-hero-frame, .ll-hero-frame video) { scale: 1; }
 }
 
+
+/* ---------- «Nasjonalmuseet»-logoteksten i åpen meny/søk ----------
+   Grå (#afafaf) som standard – hvit ved hover. */
+.header__logotext svg path { transition: fill .2s ease-out; }
+.header__logotext a:is(:hover, :focus-visible) svg path { fill: #fff; }

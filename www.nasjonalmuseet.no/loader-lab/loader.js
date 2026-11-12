@@ -550,7 +550,8 @@
   /* --- meny: rask fade fra topp til bunn, store titler går fra tynn til sin vekt ---
      Vue lager menyen (og undermenyene) på nytt hver gang den åpnes, så CSS-animasjonene spilles av hver gang.
      Her får hvert punkt rekkefølgen sin (--ll-i) etter plassering på skjermen. */
-  var MENU_ITEMS = '.menu__small-list li, .menu__opening-hours > *, .menu__large li, .menu__sublevel li';
+  // Søket bruker samme .menu (med .search): radioknappene og søkefeltet kommer inn på samme måte
+  var MENU_ITEMS = '.menu__small-list li, .menu__opening-hours > *, .menu__large li, .menu__sublevel li, .radio-list__items li, .menu__search';
   function tagMenu(root) {
     var items = [].filter.call(root.querySelectorAll(MENU_ITEMS), function (el) { return !el.__llm; });
     if (!items.length) return;
