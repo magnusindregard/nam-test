@@ -32,7 +32,7 @@
     ['Pil-lenke som knapp', 'arrowbtn', 'll-arrow-btn'],
     ['Parallax på promo-bilder', 'parallax', 'll-parallax'],
     ['Mørk bakgrunn ovenfra', 'wipe', 'll-wipe-on'],
-    ['Stort bilde: zoom + ramme', 'heroimg', 'll-hero-img'],
+    ['Stort bilde/video: zoom + ramme', 'heroimg', 'll-hero-img'],
     ['Knapper: pil ved hover', 'btnarrow', 'll-btn-arrow-on'],
     ['Lister/meny: vekt ved hover', 'listw', 'll-list-wght'],
     ['Meny-bakgrunn ovenfra', 'menuwipe', 'll-menu-wipe']
@@ -64,7 +64,7 @@
     ['Parallax', 'Styrke (%)', '--ll-parallax', 25, 1, ''],
     ['Bakgrunn', 'Ovenfra-tid (ms)', '--ll-wipe-dur', 700, 50, 'ms'],
     ['Stort bilde', 'Zoom fra', '--ll-hero-zoom', 1.15, 0.01, ''],
-    ['Stort bilde', 'Ramme fra (% inn)', '--ll-hero-inset', 6, 1, '%'],
+    ['Stort bilde', 'Ramme fra (% inn)', '--ll-hero-inset', 6, 1, ''],
     ['Stort bilde', 'Tid (ms)', '--ll-hero-dur', 1400, 100, 'ms'],
     ['Sticky', 'Fader ved (% av bildet)', '--ll-sticky-stop', 60, 5, ''],
     ['Sticky', 'Fade-lengde (px scroll)', '--ll-fade-len', 100, 25, 'px']
@@ -377,7 +377,8 @@
   }
   function setupWipe() {
     if (!html.classList.contains('ll-wipe-on')) return;
-    var cands = [].slice.call(document.querySelectorAll('header.header, main, main > *, main > * > *, main > * > * > *, main > * > * > * > *'));
+    // .site-layout: utstillingssiden setter sort bakgrunn der (bak den gjennomsiktige sticky-headeren)
+    var cands = [].slice.call(document.querySelectorAll('.site-layout, header.header, main, main > *, main > * > *, main > * > * > *, main > * > * > * > *'));
     cands.forEach(function (el) {
       var r = el.getBoundingClientRect(), c = getComputedStyle(el).backgroundColor;
       if (r.height < 40 || r.top >= window.innerHeight || !isDark(c)) return;
@@ -386,18 +387,21 @@
       el.classList.add('ll-wipe');
       wipeEls.push(el);
     });
-    // Bilde/video-bakgrunner (forsidevideoen): klippes ovenfra og ned med samme linje
+    // Bilde/video-bakgrunner (forsidevideoen): klippes ovenfra og ned med samme linje – eller, med «Stort
+    // bilde/video», kommer inn med ramme + zoom (.ll-hero-frame på wrapperen)
     document.querySelectorAll('.block-banner__background').forEach(function (el) {
       var r = el.getBoundingClientRect();
       if (r.height < 40 || r.top >= window.innerHeight) return;
-      el.style.setProperty('--ll-top', Math.round(r.top) + 'px');
-      el.style.setProperty('--ll-wipe-under', bgOf(el.parentElement && el.parentElement.parentElement || document.body));
-      el.classList.add('ll-wipe-media');
-      wipeEls.push(el);
       // Logoen ligger på video: ikke «spis» formen med en strek i bakgrunnsfarge, bare tone inn
       var lr = document.querySelector('.header__logo');
       lr = lr && lr.getBoundingClientRect();
       if (lr && lr.top >= r.top && lr.bottom <= r.bottom) html.classList.add('ll-logo-nostroke');
+      var wrap = el.querySelector('.block-banner__background-wrapper');
+      if (html.classList.contains('ll-hero-img') && wrap && !heroFrame) { heroFrame = wrap; wrap.classList.add('ll-hero-frame'); return; }
+      el.style.setProperty('--ll-top', Math.round(r.top) + 'px');
+      el.style.setProperty('--ll-wipe-under', bgOf(el.parentElement && el.parentElement.parentElement || document.body));
+      el.classList.add('ll-wipe-media');
+      wipeEls.push(el);
     });
   }
   // Logoen animeres først når bakgrunnen bak den er på plass (wipe-linjen har passert bunnen av logoen)
@@ -415,8 +419,19 @@
       else setTimeout(check, 50); // ikke hver frame – lesingen tvinger fram stilberegning
     })();
   }
+  // Forsidevideo med ramme: logoen venter til rammen har vokst forbi den
+  var heroFrame = null;
+  function logoWhenFrame() {
+    var logo = document.querySelector('.header__logo'), t0 = performance.now();
+    (function check() {
+      var f = heroFrame.getBoundingClientRect(), l = logo ? logo.getBoundingClientRect() : f;
+      if ((f.left <= l.left && f.top <= l.top) || performance.now() - t0 > 3000) html.classList.add('ll-logo-go');
+      else setTimeout(check, 50);
+    })();
+  }
   function startWipe() {
-    if (!wipeEls.length) { html.classList.add('ll-logo-go'); return; }
+    if (heroFrame) requestAnimationFrame(function () { html.classList.add('ll-hero-go'); logoWhenFrame(); });
+    if (!wipeEls.length) { if (!heroFrame) html.classList.add('ll-logo-go'); return; }
     requestAnimationFrame(logoWhenReady);
     html.addEventListener('animationend', function end(e) {
       if (e.target !== html || e.animationName !== 'll-wipe') return;

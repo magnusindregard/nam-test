@@ -544,20 +544,33 @@ html.ll-menu-wipe .menu-new__curtain--leave-active .menu__wrapper { opacity: 0; 
    Ingen understrek ved hover; i stedet får knappen under («Planlegg ditt besøk») hover-tilstand (.ll-hover, JS). */
 .block-banner h1 a:is(:hover, :focus-visible) { text-decoration: none !important; }
 
-/* ---------- Stort bilde på utstillingssiden (?heroimg=on|off) ----------
-   Når bildet kommer inn: rammen går fra et mindre utsnitt (--ll-hero-inset inn fra alle kanter) til full størrelse,
-   og bildet zoomer fra --ll-hero-zoom til 1. Ligger på picture/img (ikke .responsive-image__image, som har
-   vekst-animasjonen ved scroll), og arver figurens transition-delay fra reveal-køen. */
-:root { --ll-hero-zoom: 1.15; --ll-hero-inset: 6%; --ll-hero-dur: 1400ms; --ll-hero-ease: cubic-bezier(.22, .8, .2, 1); }
-html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r :is(.responsive-image__image, picture, img) { transition-delay: inherit; }
-html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r picture { display: block; clip-path: inset(var(--ll-hero-inset)); }
-html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r img { scale: var(--ll-hero-zoom); }
-html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r.ll-in picture {
-  clip-path: inset(0); transition-property: clip-path; transition-duration: var(--ll-hero-dur); transition-timing-function: var(--ll-hero-ease);
+/* ---------- Stort bilde på utstillingssiden og forsidevideoen (?heroimg=on|off) ----------
+   Når bildet/videoen kommer inn: rammen går fra mindre (--ll-hero-inset % inn fra kantene) til full størrelse,
+   og innholdet zoomer fra --ll-hero-zoom til 1. Bare scale (GPU) – clip-path måtte males på nytt hver frame.
+   Rammen skaleres og klipper (overflow: hidden); innholdet skaleres motsatt så zoomen blir --ll-hero-zoom.
+   Utstillingsside: ramme = picture, innhold = img, start når figuren får .ll-in (arver delay fra reveal-køen).
+   Forside: ramme = .ll-hero-frame (videoens wrapper, JS), innhold = video, start med .ll-hero-go (JS). */
+:root { --ll-hero-zoom: 1.15; --ll-hero-inset: 6; --ll-hero-dur: 1400ms; --ll-hero-ease: cubic-bezier(.22, .8, .2, 1);
+        --ll-hero-frame: calc(1 - var(--ll-hero-inset) * .02); }
+/* (egne selektorer, ikke :is – :is tar spesifisiteten til den mest spesifikke og ville slått start-reglene) */
+html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r picture,
+html.ll-loader-reveal.ll-hero-img .ll-hero-frame {
+  display: block; overflow: hidden; scale: var(--ll-hero-frame);
 }
-html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r.ll-in img {
+html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r img,
+html.ll-loader-reveal.ll-hero-img .ll-hero-frame video {
+  scale: calc(var(--ll-hero-zoom) / var(--ll-hero-frame));
+}
+html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r :is(.responsive-image__image, picture, img) { transition-delay: inherit; }
+html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r.ll-in picture,
+html.ll-loader-reveal.ll-hero-img.ll-hero-go .ll-hero-frame {
+  scale: 1; transition-property: scale; transition-duration: var(--ll-hero-dur); transition-timing-function: var(--ll-hero-ease);
+}
+html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r.ll-in img,
+html.ll-loader-reveal.ll-hero-img.ll-hero-go .ll-hero-frame video {
   scale: 1; transition-property: opacity, scale; transition-duration: 500ms, var(--ll-hero-dur); transition-timing-function: ease, var(--ll-hero-ease);
 }
 @media (prefers-reduced-motion: reduce) {
-  html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r :is(picture, img) { clip-path: none; scale: 1; }
+  html.ll-loader-reveal.ll-hero-img :is(.event-page .hero__media figure.ll-r :is(picture, img), .ll-hero-frame, .ll-hero-frame video) { scale: 1; }
 }
+
