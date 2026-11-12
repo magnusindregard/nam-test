@@ -543,3 +543,21 @@ html.ll-menu-wipe .menu-new__curtain--leave-active .menu__wrapper { opacity: 0; 
 /* ---------- Forside-hero: tittelen ----------
    Ingen understrek ved hover; i stedet får knappen under («Planlegg ditt besøk») hover-tilstand (.ll-hover, JS). */
 .block-banner h1 a:is(:hover, :focus-visible) { text-decoration: none !important; }
+
+/* ---------- Stort bilde på utstillingssiden (?heroimg=on|off) ----------
+   Når bildet kommer inn: rammen går fra et mindre utsnitt (--ll-hero-inset inn fra alle kanter) til full størrelse,
+   og bildet zoomer fra --ll-hero-zoom til 1. Ligger på picture/img (ikke .responsive-image__image, som har
+   vekst-animasjonen ved scroll), og arver figurens transition-delay fra reveal-køen. */
+:root { --ll-hero-zoom: 1.15; --ll-hero-inset: 6%; --ll-hero-dur: 1400ms; --ll-hero-ease: cubic-bezier(.22, .8, .2, 1); }
+html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r :is(.responsive-image__image, picture, img) { transition-delay: inherit; }
+html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r picture { display: block; clip-path: inset(var(--ll-hero-inset)); }
+html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r img { scale: var(--ll-hero-zoom); }
+html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r.ll-in picture {
+  clip-path: inset(0); transition-property: clip-path; transition-duration: var(--ll-hero-dur); transition-timing-function: var(--ll-hero-ease);
+}
+html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r.ll-in img {
+  scale: 1; transition-property: opacity, scale; transition-duration: 500ms, var(--ll-hero-dur); transition-timing-function: ease, var(--ll-hero-ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r :is(picture, img) { clip-path: none; scale: 1; }
+}

@@ -32,6 +32,7 @@
     ['Pil-lenke som knapp', 'arrowbtn', 'll-arrow-btn'],
     ['Parallax på promo-bilder', 'parallax', 'll-parallax'],
     ['Mørk bakgrunn ovenfra', 'wipe', 'll-wipe-on'],
+    ['Stort bilde: zoom + ramme', 'heroimg', 'll-hero-img'],
     ['Knapper: pil ved hover', 'btnarrow', 'll-btn-arrow-on'],
     ['Lister/meny: vekt ved hover', 'listw', 'll-list-wght'],
     ['Meny-bakgrunn ovenfra', 'menuwipe', 'll-menu-wipe']
@@ -62,6 +63,9 @@
     ['Hover', 'Pil avstand (px)', '--ll-arrow-gap', 12, 1, 'px'],
     ['Parallax', 'Styrke (%)', '--ll-parallax', 25, 1, ''],
     ['Bakgrunn', 'Ovenfra-tid (ms)', '--ll-wipe-dur', 700, 50, 'ms'],
+    ['Stort bilde', 'Zoom fra', '--ll-hero-zoom', 1.15, 0.01, ''],
+    ['Stort bilde', 'Ramme fra (% inn)', '--ll-hero-inset', 6, 1, '%'],
+    ['Stort bilde', 'Tid (ms)', '--ll-hero-dur', 1400, 100, 'ms'],
     ['Sticky', 'Fader ved (% av bildet)', '--ll-sticky-stop', 70, 5, ''],
     ['Sticky', 'Fade-lengde (px scroll)', '--ll-fade-len', 100, 25, 'px']
   ];
