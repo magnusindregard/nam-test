@@ -3,8 +3,9 @@
      ?loader=reveal|title|spinner|dots|bar|fade|curtain|weight|none   (side-loader)
      ?img=fade|blur|skeleton|none                  (bilde-effekt)
      ?hover=zoom|tilt|tight|none                   (hover på kort)
-     ?menu= ?sticky= ?grow=  on|off                (meny-animasjon, sticky tittel/nav og voksende bilde
-                                                    på utstillingsside)
+     ?menu= ?sticky= ?grow= ?arrowbtn= ?parallax=  on|off
+                                                   (meny-animasjon, sticky tittel/nav og voksende bilde på
+                                                    utstillingsside, pil-lenke som knapp, parallax på promo-bilder)
      ?min=600                                      (minimum visningstid i ms)
      ?delay=ms&imgdelay=ms                         (kunstig forsinkelse fra serve.py)
 */
@@ -27,7 +28,9 @@
   var TOGGLES = [
     ['Meny-animasjon', 'menu', 'll-menu-anim'],
     ['Sticky tittel/nav', 'sticky', 'll-sticky'],
-    ['Bilde vokser', 'grow', 'll-grow']
+    ['Bilde vokser', 'grow', 'll-grow'],
+    ['Pil-lenke som knapp', 'arrowbtn', 'll-arrow-btn'],
+    ['Parallax på promo-bilder', 'parallax', 'll-parallax']
   ];
   function isOn(t) { var v = store.get(t[1], 'on'); return v !== 'off' && v !== 'none'; }
   TOGGLES.forEach(function (t) { html.classList.toggle(t[2], isOn(t)); });
@@ -45,6 +48,9 @@
     ['Meny', 'Vekt-tid (ms)', '--ll-menu-wght-dur', 900, 100, 'ms'],
     ['Hover', 'Zoom', '--ll-zoom', 1.05, 0.01, ''],
     ['Hover', 'Zoom-tid (ms)', '--ll-zoom-dur', 450, 50, 'ms'],
+    ['Hover', 'Pil-knapp fade (ms)', '--ll-pill-dur', 150, 25, 'ms'],
+    ['Hover', 'Pil sprett (px)', '--ll-arrow-shift', 12, 2, 'px'],
+    ['Parallax', 'Styrke (%)', '--ll-parallax', 8, 1, ''],
     ['Sticky', 'Vekt ned til', '--ll-wback-to', 300, 10, ''],
     ['Sticky', 'Vekt ned (px scroll)', '--ll-wback-len', 150, 25, 'px'],
     ['Sticky', 'Fade-lengde (px scroll)', '--ll-fade-len', 400, 25, 'px']

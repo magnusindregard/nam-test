@@ -332,3 +332,70 @@ html.ll-event.ll-sticky .site-layout { background-color: var(--ll-event-bg, #000
 @media (prefers-reduced-motion: reduce) {
   html.ll-menu-anim :is(.ll-mi, .ll-mt) { animation: none; }
 }
+
+/* ---------- Pil-lenke som knapp (?arrowbtn=on|off) – som david-andersen.no ----------
+   «Se alle … →»: ved hover tones en sort knapp raskt inn bak teksten (skarpe hjørner), tekst og pil blir hvite,
+   og pila spretter litt til høyre (spring-kurve med overskyting). Ingen understrek.
+   Padding + like stor negativ margin oppe og på sidene, så teksten står på samme sted. Nederst tar
+   paddingen plass – neste seksjon ligger ellers oppå (den maler over alt som stikker ut). Til høyre er det
+   ekstra plass til pila. Bakgrunn og farger ligger på ::before og barna (ikke lenken), så de ikke arver
+   reveal sin transition-delay. */
+:root {
+  --ll-pill-dur: 150ms; --ll-pill-py: 8px; --ll-pill-px: 16px; --ll-pill-radius: 0px;
+  --ll-arrow-shift: 12px; --ll-arrow-dur: 300ms; --ll-arrow-ease: cubic-bezier(.34, 1.56, .64, 1);
+}
+html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) {
+  position: relative; isolation: isolate;
+  padding: var(--ll-pill-py) calc(var(--ll-pill-px) + var(--ll-arrow-shift)) var(--ll-pill-py) var(--ll-pill-px) !important;
+  margin: calc(-1 * var(--ll-pill-py)) calc(-1 * var(--ll-pill-px) - var(--ll-arrow-shift)) 0 calc(-1 * var(--ll-pill-px));
+  border-bottom-color: transparent !important;
+  --ll-pill-bg: #000; --ll-pill-fg: #fff;
+}
+html.ll-arrow-btn :is(a, button).button--theme-arrow__inverted { --ll-pill-bg: #fff; --ll-pill-fg: #000; }
+html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted)::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: var(--ll-pill-radius);
+  background: var(--ll-pill-bg); opacity: 0;
+  transition: opacity var(--ll-pill-dur) cubic-bezier(.4, 0, .2, 1);
+}
+html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) > * {
+  transition: color var(--ll-pill-dur) cubic-bezier(.4, 0, .2, 1);
+}
+html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted):is(:hover, :focus-visible)::before { opacity: 1; }
+html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted):is(:hover, :focus-visible) > * { color: var(--ll-pill-fg); }
+html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) .button__text { text-decoration: none !important; }
+/* Pila er en SVG med fast fill (ikke currentColor) */
+html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) svg path {
+  fill: currentColor; transition: fill var(--ll-pill-dur) cubic-bezier(.4, 0, .2, 1);
+}
+html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) .arrow__animation {
+  transition: transform var(--ll-arrow-dur) var(--ll-arrow-ease) !important;
+}
+html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted):is(:hover, :focus-visible) .arrow__animation {
+  transform: translateX(var(--ll-arrow-shift)) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted):is(:hover, :focus-visible) .arrow__animation { transform: none !important; }
+}
+
+/* ---------- Parallax på promo-bilder (?parallax=on|off) ----------
+   Bildet flyttes litt i motsatt retning av scrollen mens blokken passerer skjermen (scroll-drevet, view-timeline).
+   Skaleres opp så det ikke blir kanter; --ll-parallax er utslaget i % av bildehøyden. */
+:root { --ll-parallax: 8; }
+@supports (animation-timeline: view()) {
+  html.ll-parallax .promotion-block__image-column { view-timeline: --ll-promo block; }
+  html.ll-parallax .promotion-block__image { overflow: hidden; }
+  html.ll-parallax .promotion-block__image .responsive-image__image {
+    scale: calc(1 + var(--ll-parallax) * 0.022);
+    animation: ll-parallax linear both;
+    animation-timeline: --ll-promo;
+    animation-range: cover;
+  }
+}
+@keyframes ll-parallax {
+  from { translate: 0 calc(var(--ll-parallax) * -1%); }
+  to   { translate: 0 calc(var(--ll-parallax) * 1%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.ll-parallax .promotion-block__image .responsive-image__image { animation: none; scale: 1; }
+}
