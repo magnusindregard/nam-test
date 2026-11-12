@@ -158,10 +158,27 @@ html.ll-loading.ll-loader-reveal #ll-panel { visibility: visible; }
 html.ll-loader-reveal .ll-r { opacity: 0; transition: none; }
 html.ll-loader-reveal .ll-r.ll-in { opacity: 1; transition: opacity var(--ll-r-duration) ease-out; }
 
+/* Alt innhold glir litt opp mens det toner inn (translate, så det ikke kolliderer med sidens transform).
+   Kort-rader har sin egen bevegelse (transform), avsnitt beveger hver linje (ordene er inline-block). */
+:root { --ll-shift: 10px; --ll-shift-duration: 600ms; }
+html.ll-loader-reveal .ll-r:not(.ll-row):not(.ll-lines) { translate: 0 var(--ll-shift); }
+html.ll-loader-reveal .ll-r.ll-in:not(.ll-row):not(.ll-lines) {
+  translate: none;
+  transition: opacity var(--ll-r-duration) ease-out, translate var(--ll-shift-duration) var(--ll-r-ease);
+}
+/* Overskrifter: behold vekt-overgangen (regelen over er mer spesifikk enn .ll-h.ll-in) */
+html.ll-loader-reveal .ll-h.ll-r.ll-in:not(.ll-row):not(.ll-lines) {
+  transition: font-weight var(--ll-h-duration) var(--ll-r-ease), opacity var(--ll-r-duration) ease-out,
+              translate var(--ll-shift-duration) var(--ll-r-ease);
+}
+
 /* Avsnitt linje for linje: selve avsnittet er synlig, ordene (.ll-wd) toner inn linje for linje */
 html.ll-loader-reveal .ll-r.ll-lines { opacity: 1; transition: none; }
-html.ll-loader-reveal .ll-lines .ll-wd { opacity: 0; transition: none; }
-html.ll-loader-reveal .ll-lines .ll-wd.ll-in { opacity: 1; transition: opacity var(--ll-r-duration) ease-out; }
+html.ll-loader-reveal .ll-lines .ll-wd { display: inline-block; opacity: 0; translate: 0 var(--ll-shift); transition: none; }
+html.ll-loader-reveal .ll-lines .ll-wd.ll-in {
+  opacity: 1; translate: none;
+  transition: opacity var(--ll-r-duration) ease-out, translate var(--ll-shift-duration) var(--ll-r-ease);
+}
 
 /* Kort på samme rad: ett og ett fra venstre (steg i JS), fade + litt nedenfra og opp */
 :root { --ll-row-shift: 12px; --ll-row-duration: 500ms; }
@@ -341,7 +358,7 @@ html.ll-event.ll-sticky .site-layout { background-color: var(--ll-event-bg, #000
    ekstra plass til pila. Bakgrunn og farger ligger på ::before og barna (ikke lenken), så de ikke arver
    reveal sin transition-delay. */
 :root {
-  --ll-pill-dur: 150ms; --ll-pill-py: 8px; --ll-pill-px: 16px; --ll-pill-radius: 0px;
+  --ll-pill-dur: 150ms; --ll-pill-py: 8px; --ll-pill-px: 16px; --ll-pill-radius: 4px;
   --ll-arrow-shift: 12px; --ll-arrow-dur: 300ms; --ll-arrow-ease: cubic-bezier(.34, 1.56, .64, 1);
 }
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) {
@@ -380,7 +397,7 @@ html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__
 /* ---------- Parallax på promo-bilder (?parallax=on|off) ----------
    Bildet flyttes litt i motsatt retning av scrollen mens blokken passerer skjermen (scroll-drevet, view-timeline).
    Skaleres opp så det ikke blir kanter; --ll-parallax er utslaget i % av bildehøyden. */
-:root { --ll-parallax: 8; }
+:root { --ll-parallax: 15; }
 @supports (animation-timeline: view()) {
   html.ll-parallax .promotion-block__image-column { view-timeline: --ll-promo block; }
   html.ll-parallax .promotion-block__image { overflow: hidden; }
@@ -416,4 +433,24 @@ html.ll-loader-reveal .ll-wipe {
 }
 @media (prefers-reduced-motion: reduce) {
   html.ll-wipe-run { animation-duration: 1ms; }
+}
+
+/* ---------- Knapper med fyll: pil ved hover (?btnarrow=on|off) ----------
+   Pila (.ll-btn-arrow, lagt inn i JS) har 0 bredde og -gap margin til vanlig, og vokser inn ved hover,
+   så knappen blir bredere. Pila glir litt inn fra venstre. */
+:root { --ll-btn-arrow-w: 16px; --ll-btn-arrow-dur: 300ms; }
+.ll-btn-arrow { display: none; }
+html.ll-btn-arrow-on .ll-btn-arrow {
+  display: inline-flex; align-items: center; overflow: hidden; flex-shrink: 0;
+  width: 0; margin-left: calc(-1 * var(--ll-btn-gap, 8px));
+  transition: width var(--ll-btn-arrow-dur) var(--ll-r-ease), margin-left var(--ll-btn-arrow-dur) var(--ll-r-ease);
+}
+html.ll-btn-arrow-on .ll-btn-arrow svg {
+  flex-shrink: 0; opacity: 0; translate: -6px 0;
+  transition: opacity var(--ll-btn-arrow-dur) ease, translate var(--ll-btn-arrow-dur) var(--ll-r-ease);
+}
+html.ll-btn-arrow-on .button:is(:hover, :focus-visible) > .ll-btn-arrow { width: var(--ll-btn-arrow-w); margin-left: 0; }
+html.ll-btn-arrow-on .button:is(:hover, :focus-visible) > .ll-btn-arrow svg { opacity: 1; translate: none; }
+@media (prefers-reduced-motion: reduce) {
+  html.ll-loader-reveal .ll-r, html.ll-loader-reveal .ll-wd { translate: none !important; }
 }

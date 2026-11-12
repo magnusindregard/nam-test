@@ -31,7 +31,8 @@
     ['Bilde vokser', 'grow', 'll-grow'],
     ['Pil-lenke som knapp', 'arrowbtn', 'll-arrow-btn'],
     ['Parallax på promo-bilder', 'parallax', 'll-parallax'],
-    ['Mørk bakgrunn ovenfra', 'wipe', 'll-wipe-on']
+    ['Mørk bakgrunn ovenfra', 'wipe', 'll-wipe-on'],
+    ['Knapper: pil ved hover', 'btnarrow', 'll-btn-arrow-on']
   ];
   function isOn(t) { var v = store.get(t[1], 'on'); return v !== 'off' && v !== 'none'; }
   TOGGLES.forEach(function (t) { html.classList.toggle(t[2], isOn(t)); });
@@ -41,6 +42,7 @@
     ['Innlasting', 'Start (ms)', '--ll-start', 500, 50, 'ms'],
     ['Innlasting', 'Steg per linje (ms)', '--ll-step', 120, 10, 'ms'],
     ['Innlasting', 'Steg per kort (ms)', '--ll-row-step', 90, 10, 'ms'],
+    ['Innlasting', 'Vertikal bevegelse (px)', '--ll-shift', 10, 2, 'px'],
     ['Overskrift', 'Vekt fra', '--ll-h-from', 300, 10, ''],
     ['Overskrift', 'Vekt-tid (ms)', '--ll-h-duration', 1000, 100, 'ms'],
     ['Overskrift', 'Min. str. (px, last på nytt)', '--ll-h-min', 28, 2, 'px'],
@@ -51,7 +53,7 @@
     ['Hover', 'Zoom-tid (ms)', '--ll-zoom-dur', 450, 50, 'ms'],
     ['Hover', 'Pil-knapp fade (ms)', '--ll-pill-dur', 150, 25, 'ms'],
     ['Hover', 'Pil sprett (px)', '--ll-arrow-shift', 12, 2, 'px'],
-    ['Parallax', 'Styrke (%)', '--ll-parallax', 8, 1, ''],
+    ['Parallax', 'Styrke (%)', '--ll-parallax', 15, 1, ''],
     ['Bakgrunn', 'Ovenfra-tid (ms)', '--ll-wipe-dur', 700, 50, 'ms'],
     ['Sticky', 'Vekt ned til', '--ll-wback-to', 300, 10, ''],
     ['Sticky', 'Vekt ned (px scroll)', '--ll-wback-len', 150, 25, 'px'],
@@ -97,6 +99,15 @@
   var SEL = 'h1, h2, h3, h4, p, li, .ulc-item, figure, picture, img, form, .search-input, a, button, .hero__type-tag';
   // Står over tittelen, men skal inn rett etter at tittelen er på plass (ikke i vanlig topp-til-bunn-rekkefølge)
   var AFTER_TITLE_SEL = '.hero__type-tag';
+  function isBlock(el) {
+    if (el.matches(SEL)) return true;
+    if (el.closest('svg') || /^(SCRIPT|STYLE|SOURCE|BR|TEMPLATE)$/.test(el.tagName)) return false;
+    if ([].some.call(el.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim(); })) return true;
+    var cs = getComputedStyle(el), r = el.getBoundingClientRect();
+    if (!r.height || r.height > 150 || r.width > window.innerWidth * 0.8) return false;
+    var bg = cs.backgroundColor, hasBg = bg !== 'transparent' && !/^rgba\(.*,\s*0\)$/.test(bg);
+    return hasBg || (parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== 'none');
+  }
   // Tagger blokkene i root (ytterste treff vinner, så et kort toner inn som én enhet). Returnerer de nye.
   function tag(root) {
     var added = [];
@@ -113,8 +124,10 @@
       h.classList.add('ll-h');
       lockLines(h);
     });
-    var els = [].slice.call(root.querySelectorAll(SEL));
-    if (root.matches && root.matches(SEL)) els.unshift(root);
+    // Alt innhold: SEL, elementer med egen tekst, og små brikker med egen bakgrunn/ramme (etiketter, merker).
+    // Dokumentrekkefølge, så ytterste treff vinner.
+    var els = [].filter.call(root.querySelectorAll('*'), isBlock);
+    if (root.matches && isBlock(root)) els.unshift(root);
     els.forEach(function (el) {
       for (var a = el; a && a !== document.body; a = a.parentElement) if (a.__llr) return;
       el.__llr = 1;
@@ -443,6 +456,30 @@
     window.addEventListener('resize', function () { stickyUpdate(); });
   }
   document.addEventListener('DOMContentLoaded', function () { hydrated.then(setupSticky); });
+
+  /* --- knapper med fyll: pil etter teksten ved hover (bredden animeres i CSS) ---
+     Bare knapper med tekst og uten eget ikon. */
+  var ARROW_SVG = '<svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M3 10h13M11 5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
+  function addArrows(root) {
+    if (!root.querySelectorAll) return;
+    var list = [].slice.call(root.querySelectorAll('.button'));
+    if (root.matches && root.matches('.button')) list.push(root);
+    list.forEach(function (b) {
+      if (b.__lla || /theme-arrow|icon-only/.test(b.className) || b.querySelector('.button__icon, .icon') || !b.textContent.trim()) return;
+      b.__lla = 1;
+      var s = document.createElement('span');
+      s.className = 'll-btn-arrow'; s.setAttribute('aria-hidden', 'true'); s.innerHTML = ARROW_SVG;
+      b.appendChild(s);
+    });
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    hydrated.then(function () {
+      addArrows(document);
+      new MutationObserver(function (muts) {
+        muts.forEach(function (m) { m.addedNodes.forEach(function (n) { if (n.nodeType === 1) addArrows(n); }); });
+      }).observe(document.body, { childList: true, subtree: true });
+    });
+  });
 
   /* --- bilde-effekter --- */
   function track(im) {
