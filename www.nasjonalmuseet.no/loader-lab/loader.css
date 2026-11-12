@@ -215,8 +215,10 @@ html.ll-loader-reveal .header__logo svg g path {
   stroke: var(--ll-logo-bg, var(--ll-bg)); stroke-width: var(--ll-logo-erode);
   transition: stroke-width 450ms var(--ll-r-ease) 100ms;
 }
-html.ll-done.ll-loader-reveal .header__logo svg { opacity: 1; }
-html.ll-done.ll-loader-reveal .header__logo svg g path { stroke-width: 0; }
+/* Logoen starter først når bakgrunnen bak den er på plass (.ll-logo-go settes i JS etter wipe-linjen) */
+html.ll-logo-go.ll-loader-reveal .header__logo svg { opacity: 1; }
+html.ll-logo-go.ll-loader-reveal .header__logo svg g path { stroke-width: 0; }
+html.ll-logo-nostroke.ll-loader-reveal .header__logo svg g path { stroke-width: 0; transition: none; }
 
 @media (prefers-reduced-motion: reduce) {
   html.ll-loader-reveal .ll-r, html.ll-loader-reveal .ll-h, html.ll-loader-reveal .ll-wd { transition-duration: 1ms; }
@@ -439,6 +441,10 @@ html.ll-loader-reveal .ll-wipe {
   background-repeat: no-repeat !important;
   background-position: 0 0 !important;
   background-size: 100% clamp(0px, calc(var(--ll-wipe) - var(--ll-top)), 100%) !important;
+}
+/* Bilde/video-bakgrunner (forsidevideoen) klippes ovenfra og ned med samme linje */
+html.ll-loader-reveal .ll-wipe-media {
+  clip-path: inset(0 0 calc(100% - clamp(0px, calc(var(--ll-wipe) - var(--ll-top)), 100%)) 0);
 }
 @media (prefers-reduced-motion: reduce) {
   html.ll-wipe-run { animation-duration: 1ms; }

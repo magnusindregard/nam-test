@@ -145,7 +145,7 @@
         el.style.setProperty('--ll-si', [].indexOf.call(el.parentElement.children, el));
       }
       // Avsnitt kommer inn linje for linje
-      if (el.tagName === 'P' && el.textContent.trim()) { el.__llWords = wrapWords(el, 'll-wd'); el.classList.add('ll-lines'); }
+      if (el.tagName === 'P' && el.textContent.trim() && !el.querySelector('.button')) { el.__llWords = wrapWords(el, 'll-wd'); el.classList.add('ll-lines'); }
       added.push(el);
     });
     return added;
@@ -211,7 +211,21 @@
     if (e.propertyName === 'font-weight' && e.target.classList && e.target.classList.contains('ll-h')) e.target.classList.add('ll-h-done');
   });
   var lateObserver;
+  // Forsidens «Planlegg ditt besøk →» bygges om til samme komponent som «Se alle …»-lenkene (hvit utgave på video)
+  var LONG_ARROW = '<svg class="arrow__animation" viewBox="0 0 31 12" fill="none" aria-hidden="true"><path d="M0 5.33333L28.4167 5.33333L23.25 0L25.1875 0L31 6L25.1875 12H23.25L28.4167 6.66667L0 6.66667L0 5.33333Z" fill="currentColor"/></svg>';
+  function convertLinks() {
+    document.querySelectorAll('.block-banner__item-text a').forEach(function (a) {
+      if (a.__llc || a.classList.contains('button')) return;
+      a.__llc = 1;
+      var text = a.textContent.trim();
+      a.className += ' button button--theme-arrow__inverted button--size-compact button--font-weight-medium';
+      a.innerHTML = '<span class="button__text"></span><span class="button--theme-arrow__inverted">' + LONG_ARROW + '</span>';
+      a.firstChild.textContent = text;
+    });
+  }
+  document.addEventListener('DOMContentLoaded', function () { hydrated.then(convertLinks); });
   function setupReveal() {
+    convertLinks();
     var logo = document.querySelector('.header__logo');
     if (logo) html.style.setProperty('--ll-logo-bg', bgOf(logo));
     setupWipe();
@@ -343,14 +357,43 @@
       el.classList.add('ll-wipe');
       wipeEls.push(el);
     });
+    // Bilde/video-bakgrunner (forsidevideoen): klippes ovenfra og ned med samme linje
+    document.querySelectorAll('.block-banner__background').forEach(function (el) {
+      var r = el.getBoundingClientRect();
+      if (r.height < 40 || r.top >= window.innerHeight) return;
+      el.style.setProperty('--ll-top', Math.round(r.top) + 'px');
+      el.classList.add('ll-wipe-media');
+      wipeEls.push(el);
+      // Logoen ligger på video: ikke «spis» formen med en strek i bakgrunnsfarge, bare tone inn
+      var lr = document.querySelector('.header__logo');
+      lr = lr && lr.getBoundingClientRect();
+      if (lr && lr.top >= r.top && lr.bottom <= r.bottom) html.classList.add('ll-logo-nostroke');
+    });
+  }
+  // Logoen animeres først når bakgrunnen bak den er på plass (wipe-linjen har passert bunnen av logoen)
+  function logoWhenReady() {
+    var logo = document.querySelector('.header__logo');
+    var under = logo && wipeEls.length && wipeEls.some(function (el) {
+      var r = el.getBoundingClientRect(), l = logo.getBoundingClientRect();
+      return r.top <= l.top && r.bottom >= l.bottom;
+    });
+    if (!under) { html.classList.add('ll-logo-go'); return; }
+    var target = logo.getBoundingClientRect().bottom;
+    (function check() {
+      var w = parseFloat(getComputedStyle(html).getPropertyValue('--ll-wipe')) || 0;
+      if (w >= target || !html.classList.contains('ll-wipe-run')) html.classList.add('ll-logo-go');
+      else requestAnimationFrame(check);
+    })();
   }
   function startWipe() {
-    if (!wipeEls.length) return;
+    if (!wipeEls.length) { html.classList.add('ll-logo-go'); return; }
+    requestAnimationFrame(logoWhenReady);
     html.addEventListener('animationend', function end(e) {
       if (e.target !== html || e.animationName !== 'll-wipe') return;
       html.removeEventListener('animationend', end);
-      wipeEls.forEach(function (el) { el.classList.remove('ll-wipe'); });
+      wipeEls.forEach(function (el) { el.classList.remove('ll-wipe', 'll-wipe-media'); });
       html.classList.remove('ll-wipe-run');
+      html.classList.add('ll-logo-go');
     });
     html.classList.add('ll-wipe-run');
   }
