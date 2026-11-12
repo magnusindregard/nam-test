@@ -46,6 +46,7 @@
     ['Innlasting', 'Steg per kort (ms)', '--ll-row-step', 90, 10, 'ms'],
     ['Innlasting', 'Vertikal bevegelse (px)', '--ll-shift', 10, 2, 'px'],
     ['Innlasting', 'Liste-rader spredt (px)', '--ll-spread', 40, 5, 'px'],
+    ['Innlasting', 'Linjer hvit → grå (ms)', '--ll-line-dur', 1200, 100, 'ms'],
     ['Overskrift', 'Vekt fra', '--ll-h-from', 300, 10, ''],
     ['Overskrift', 'Vekt-tid (ms)', '--ll-h-duration', 1000, 100, 'ms'],
     ['Overskrift', 'Min. str. (px, last på nytt)', '--ll-h-min', 28, 2, 'px'],
@@ -142,6 +143,9 @@
       el.classList.add('ll-r');
       if (el.matches(AFTER_TITLE_SEL)) { el.classList.add('ll-after'); return; }
       if (el.matches(SPREAD_SEL)) {
+        // Linjene (rammene) går fra bakgrunnsfargen til sin egen farge (les før .ll-spread endrer den)
+        el.style.setProperty('--ll-line-c', getComputedStyle(el).borderTopColor);
+        el.style.setProperty('--ll-line-from', bgOf(el.parentElement));
         el.classList.add('ll-spread');
         el.style.setProperty('--ll-si', [].indexOf.call(el.parentElement.children, el));
       }
@@ -312,7 +316,19 @@
     nextSlot = at + step;
     return Math.round(at - now);
   }
+  // Det som står i kø (ikke startet ennå). Ligger ingenting av det på skjermen lenger (man har scrollet
+  // forbi), skal nytt innhold ikke vente bak det.
+  var queued = [];
+  function skipStaleQueue() {
+    var now = performance.now();
+    queued = queued.filter(function (q) { return q.at > now; });
+    var visible = queued.some(function (q) {
+      return q.nodes.some(function (n) { var r = n.getBoundingClientRect(); return r.bottom > 0 && r.top < window.innerHeight; });
+    });
+    if (!visible) { queued = []; nextSlot = Math.min(nextSlot, now); }
+  }
   function reveal(nodes, delay) {
+    if (delay > 0) queued.push({ nodes: nodes, at: performance.now() + delay });
     nodes.forEach(function (n) { n.style.transitionDelay = delay + 'ms'; });
     // en frame så .ll-row sin startposisjon er på plass før overgangen
     requestAnimationFrame(function () { nodes.forEach(function (n) { n.classList.add('ll-in'); }); });
@@ -415,6 +431,7 @@
     showMenu();
     var els = document.querySelectorAll('.ll-r:not(.header__nav-item):not(.ll-after)');
     io = 'IntersectionObserver' in window && new IntersectionObserver(function (entries) {
+      skipStaleQueue();
       entries.filter(function (e) { return e.isIntersecting; })
         .map(function (e) { return e.target; })
         .sort(function (a, b) {

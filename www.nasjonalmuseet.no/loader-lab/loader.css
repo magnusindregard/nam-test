@@ -166,12 +166,18 @@ html.ll-loader-reveal .ll-r.ll-in:not(.ll-row):not(.ll-lines) {
   translate: none;
   transition: opacity var(--ll-r-duration) ease-out, translate var(--ll-shift-duration) var(--ll-r-ease);
 }
-/* Liste-rader («Utforsk videre»): starter med stor avstand (rad i ligger i × --ll-spread lenger ned) og glir sammen */
-:root { --ll-spread: 40px; --ll-spread-dur: 900ms; }
-html.ll-loader-reveal .ll-r.ll-spread:not(.ll-row):not(.ll-lines) { translate: 0 calc(var(--ll-shift) + var(--ll-si, 0) * var(--ll-spread)); }
+/* Liste-rader («Utforsk videre»): starter med stor avstand (rad i ligger i × --ll-spread lenger ned) og glir sammen.
+   Linjene (rammene) går fra bakgrunnsfargen (--ll-line-from) til sin egen grå (--ll-line-c), satt i JS. */
+:root { --ll-spread: 40px; --ll-spread-dur: 900ms; --ll-line-dur: 1200ms; }
+html.ll-loader-reveal .ll-r.ll-spread:not(.ll-row):not(.ll-lines) {
+  translate: 0 calc(var(--ll-shift) + var(--ll-si, 0) * var(--ll-spread));
+  border-color: var(--ll-line-from, #fff);
+}
 html.ll-loader-reveal .ll-r.ll-spread.ll-in:not(.ll-row):not(.ll-lines) {
   translate: none;
-  transition: opacity var(--ll-r-duration) ease-out, translate var(--ll-spread-dur) var(--ll-r-ease);
+  border-color: var(--ll-line-c);
+  transition: opacity var(--ll-r-duration) ease-out, translate var(--ll-spread-dur) var(--ll-r-ease),
+              border-color var(--ll-line-dur) ease-out;
 }
 /* Overskrifter: behold vekt-overgangen (regelen over er mer spesifikk enn .ll-h.ll-in) */
 html.ll-loader-reveal .ll-h.ll-r.ll-in:not(.ll-row):not(.ll-lines) {
