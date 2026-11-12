@@ -496,12 +496,14 @@ html.ll-btn-arrow-on .button:is(:hover, :focus-visible) > .ll-btn-arrow svg { op
    «Utforsk andre verk» (Maleri, Olje …) og trekkspill (Verksinformasjon …): regular → medium ved hover.
    Hover gjelder bare selve teksten, ikke hele raden: lenken i «Utforsk andre verk» er ellers like bred som
    kolonnen (og sidens egen pil kommer på lenke-hover), så den gjøres bare så bred som innholdet. */
-:root { --ll-hw-dur: 300ms; }
+:root { --ll-hw-dur: 300ms; --ll-menu-move-dur: 400ms; }
 html.ll-list-wght .category-list-block__item-link { width: fit-content; max-width: 100%; }
 /* Megamenyen: de store punktene (Besøk, Hva skjer? …) ved hover på teksten og når de er aktive (undermeny åpen) */
 html.ll-list-wght .menu__large-item > span {
   font-family: "MuseetSansVF-lab", sans-serif !important;
-  transition: font-weight var(--ll-hw-dur) var(--ll-r-ease), color .2s ease-out;
+  /* sidens hover/aktiv flytter teksten (padding-left / translate) – de må med, ellers hopper den */
+  transition: font-weight var(--ll-hw-dur) var(--ll-r-ease), color .2s ease-out,
+              padding-left var(--ll-menu-move-dur) var(--ll-r-ease), translate var(--ll-menu-move-dur) var(--ll-r-ease);
 }
 html.ll-list-wght :is(.menu__large-item > span:hover, .menu__large-item:focus-visible > span, .menu__large-item.active > span) {
   font-weight: 500;
