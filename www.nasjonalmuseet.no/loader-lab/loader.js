@@ -27,7 +27,7 @@
   /* --- av/på-valg som virker live (klasse på <html>) --- */
   var TOGGLES = [
     ['Meny-animasjon', 'menu', 'll-menu-anim'],
-    ['Sticky tittel', 'sticky', 'll-sticky'],
+    ['Sticky tittel/nav', 'sticky', 'll-sticky'],
     ['Bilde vokser', 'grow', 'll-grow'],
     ['Pil-lenke som knapp', 'arrowbtn', 'll-arrow-btn'],
     ['Parallax på promo-bilder', 'parallax', 'll-parallax'],
@@ -62,7 +62,8 @@
     ['Hover', 'Pil avstand (px)', '--ll-arrow-gap', 12, 1, 'px'],
     ['Parallax', 'Styrke (%)', '--ll-parallax', 25, 1, ''],
     ['Bakgrunn', 'Ovenfra-tid (ms)', '--ll-wipe-dur', 700, 50, 'ms'],
-    ['Sticky', 'Stikktittel fader over (px)', '--ll-tag-fade', 80, 10, 'px']
+    ['Sticky', 'Fader ved (% av bildet)', '--ll-sticky-stop', 70, 5, ''],
+    ['Sticky', 'Fade-lengde (px scroll)', '--ll-fade-len', 100, 25, 'px']
   ];
   function varVal(v) { return store.get('v' + v[2], String(v[3])); }
   VARS.forEach(function (v) { html.style.setProperty(v[2], varVal(v) + v[5]); });
@@ -514,8 +515,10 @@
     }).observe(host, { childList: true, subtree: true });
   });
 
-  /* --- utstillingsside: tittelen står stille der den lastes til bunnen av den treffer bunnen av bildet,
-     og scrolles så bort med bildet. Nav og logo scrolles bort som vanlig.
+  /* --- utstillingsside: tittel (med stikktittel), nav og logo står stille der de lastes ---
+     Når midten av tittelen treffer --ll-sticky-stop % ned på bildet, fader alle raskt ut samtidig over
+     --ll-fade-len px scroll (CSS, scroll-drevet; start/slutt regnes ut her). Tittelen slipper uansett
+     senest når bunnen av den treffer bunnen av bildet.
      Bilde vokser: fra man begynner å scrolle til bildet når toppen av skjermen, skaleres det opp til det
      dekker hele viewporten. Bildeteksten skyves ned like mye, og plassen er reservert under bildet. */
   var stickyUpdate = function () {};
@@ -531,6 +534,8 @@
     var gap = media.getBoundingClientRect().top - hr.bottom;
     // Står der den er når siden er scrollet helt opp (avstanden fra toppen av dokumentet)
     hc.style.setProperty('--ll-sticky-top', top0 + 'px');
+    // Headerens egen farge (før den gjøres gjennomsiktig) – tittelens forfedre er gjennomsiktige
+    html.style.setProperty('--ll-event-bg', bgOf(document.querySelector('header.header') || hc));
     html.classList.add('ll-event');
     stickyUpdate = function () {
       // Bilde vokser – mål uten skalering (offsetWidth/-Height og forelderens posisjon påvirkes ikke av den)
@@ -543,6 +548,19 @@
       html.style.setProperty('--ll-grow-scale', s.toFixed(4));
       html.style.setProperty('--ll-grow-extra', Math.round(h * (s - 1)) + 'px');
       pic.style.transformOrigin = Math.round(vw / 2 - mr.left) + 'px 0';
+
+      // Fade starter når midten av tittelen treffer --ll-sticky-stop % ned på bildet (bildet kan vokse underveis)
+      var cs = getComputedStyle(html);
+      var len = parseFloat(cs.getPropertyValue('--ll-fade-len')) || 100;
+      var stop = (parseFloat(cs.getPropertyValue('--ll-sticky-stop')) || 70) / 100;
+      var growEnd = Math.max(1, Math.round(mediaTop));
+      var titleMid = top0 + hc.offsetHeight / 2, y = 0;
+      for (; y < mediaTop + h * s; y++) {
+        var sc = grow ? 1 + (s - 1) * Math.min(1, y / growEnd) : 1;
+        if (mediaTop - y + stop * h * sc <= titleMid) break;
+      }
+      html.style.setProperty('--ll-fade-start', y + 'px');
+      html.style.setProperty('--ll-fade-end', Math.round(y + len) + 'px');
 
       // Sticky slipper når tittelens margin-boks treffer bunnen av forelderen. Stor margin-bottom på tittelen,
       // og bildet trukket like mye opp igjen (oppsettet er uendret), så slippet skjer når bunnen av tittelen
@@ -646,6 +664,7 @@
         var v = VARS[inp.dataset.var];
         html.style.setProperty(v[2], inp.value + v[5]);
         store.set('v' + v[2], inp.value);
+        if (v[2] === '--ll-fade-len' || v[2] === '--ll-sticky-stop') stickyUpdate();
         
       };
     });

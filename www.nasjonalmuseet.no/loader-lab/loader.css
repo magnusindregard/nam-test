@@ -311,15 +311,19 @@ html.ll-menu-anim .ll-mt {
    --ll-sticky-top (startposisjonen) og margin-trikset som bestemmer når den slipper, settes i JS (setupSticky). */
 html.ll-sticky .ll-sticky-h { position: sticky; top: var(--ll-sticky-top); z-index: 3; }
 
-/* Stikktittelen («Utstilling») fader ut med en gang man scroller, så den ikke blir med nedover. */
+/* Nav og logo står stille som tittelen. Når midten av tittelen treffer --ll-sticky-stop % ned på bildet, fader
+   tittel (med stikktittel), nav og logo raskt ut samtidig (--ll-fade-start/-end settes i JS).
+   Headeren er gjennomsiktig så bildet kan vokse opp under den, med sidens egen bakgrunn bak. */
+html.ll-event.ll-sticky .header-menu-new { position: sticky; top: 0; z-index: 10; }
+html.ll-event.ll-sticky header.header { background: transparent !important; }
+html.ll-event.ll-sticky .site-layout { background-color: var(--ll-event-bg, #000); }
 @supports (animation-timeline: scroll()) {
-  html.ll-event.ll-sticky .ll-sticky-h .hero__type-tag {
+  html.ll-event.ll-sticky :is(.header-menu-new, .ll-sticky-h) {
     animation: ll-sticky-out linear both;
     animation-timeline: scroll(root);
-    animation-range: 0px var(--ll-tag-fade, 80px);
+    animation-range: var(--ll-fade-start, 0px) var(--ll-fade-end, 100px);
   }
 }
-:root { --ll-tag-fade: 80px; }
 @keyframes ll-sticky-out { to { opacity: 0; visibility: hidden; } }
 
 /* Bilde vokser til det dekker viewporten når toppen av bildet når toppen av skjermen.
