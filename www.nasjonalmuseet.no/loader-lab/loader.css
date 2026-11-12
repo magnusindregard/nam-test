@@ -437,19 +437,17 @@ html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__
 }
 
 /* ---------- Mørk bakgrunn ovenfra (?wipe=on|off) ----------
-   Mørke flater (merket .ll-wipe i JS, med egen farge i --ll-wipe-c og topp i --ll-top) får bakgrunnen som en
-   gradient som fylles ned til den felles linjen --ll-wipe. Linjen animeres fra 0 til 100vh på <html>. */
+   De mørke flatene (.ll-wipe) er gjennomsiktige mens det pågår. Bak alt innhold ligger ett lag (.ll-wipe-layer,
+   fixed, z-index -1 – tegnes under blokkenes bakgrunn) i den mørke fargen, som skaleres ned ovenfra.
+   Bare transform (GPU) – den gamle varianten tegnet store bakgrunner på nytt og regnet ut stiler hver frame. */
 :root { --ll-wipe-dur: 700ms; --ll-wipe-ease: cubic-bezier(.65, .05, .36, 1); }
-@property --ll-wipe { syntax: "<length>"; inherits: true; initial-value: 0px; }
-html.ll-wipe-run { animation: ll-wipe var(--ll-wipe-dur) var(--ll-wipe-ease) both; }
-@keyframes ll-wipe { from { --ll-wipe: 0px; } to { --ll-wipe: 100vh; } }
-html.ll-loader-reveal .ll-wipe {
-  background-color: transparent !important;
-  background-image: linear-gradient(var(--ll-wipe-c), var(--ll-wipe-c)) !important;
-  background-repeat: no-repeat !important;
-  background-position: 0 0 !important;
-  background-size: 100% clamp(0px, calc(var(--ll-wipe) - var(--ll-top)), 100%) !important;
+html.ll-loader-reveal .ll-wipe { background-color: transparent !important; }
+.ll-wipe-layer {
+  position: fixed; left: 0; right: 0; z-index: -1; pointer-events: none;
+  transform-origin: 50% 0; transform: scaleY(0); will-change: transform;
 }
+html.ll-wipe-run .ll-wipe-layer { animation: ll-wipe-layer var(--ll-wipe-dur) var(--ll-wipe-ease) both; }
+@keyframes ll-wipe-layer { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 /* Bilde/video-bakgrunner (forsidevideoen): et dekklag i sidens farge krymper mot bunnen, så videoen kommer
    til syne ovenfra. transform (ikke clip-path) så nettleseren kan gjøre det på GPU-en uten å male videoen på nytt. */
 html.ll-loader-reveal .ll-wipe-media::after {

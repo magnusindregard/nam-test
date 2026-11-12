@@ -369,7 +369,7 @@
   /* Mørk bakgrunn ovenfra: mørke flater i første skjermbilde (header og blokker i main, ikke footer) fylles
      ovenfra og ned av én felles linje (--ll-wipe, 0 → 100vh), så de glir over i hverandre som én flate.
      Bare bakgrunnen animeres; etterpå får elementene tilbake sin egen bakgrunn. */
-  var wipeEls = [];
+  var wipeEls = [], wipeLayer = null;
   function isDark(c) {
     var m = c.match(/[\d.]+/g);
     if (!m || (m.length > 3 && +m[3] === 0)) return false;
@@ -379,14 +379,24 @@
     if (!html.classList.contains('ll-wipe-on')) return;
     // .site-layout: utstillingssiden setter sort bakgrunn der (bak den gjennomsiktige sticky-headeren)
     var cands = [].slice.call(document.querySelectorAll('.site-layout, header.header, main, main > *, main > * > *, main > * > * > *, main > * > * > * > *'));
+    var top = Infinity, bottom = 0, color = null;
     cands.forEach(function (el) {
       var r = el.getBoundingClientRect(), c = getComputedStyle(el).backgroundColor;
       if (r.height < 40 || r.top >= window.innerHeight || !isDark(c)) return;
-      el.style.setProperty('--ll-wipe-c', c);
-      el.style.setProperty('--ll-top', Math.round(r.top) + 'px');
+      if (r.top < top) { top = r.top; color = c; }
+      bottom = Math.max(bottom, r.bottom);
       el.classList.add('ll-wipe');
       wipeEls.push(el);
     });
+    // Ett lag i den mørke fargen bak alt innhold (z-index -1 tegnes under blokkenes bakgrunn), over de mørke
+    // flatene (som er gjennomsiktige mens det pågår). Det skaleres ned ovenfra – bare transform, ingen omtegning.
+    if (wipeEls.length) {
+      wipeLayer = document.createElement('div');
+      wipeLayer.className = 'll-wipe-layer';
+      wipeLayer.style.cssText = 'top:' + Math.max(0, Math.round(top)) + 'px;height:' +
+        Math.round(Math.min(bottom, window.innerHeight) - Math.max(0, top)) + 'px;background:' + color;
+      document.body.appendChild(wipeLayer);
+    }
     // Bilde/video-bakgrunner (forsidevideoen): klippes ovenfra og ned med samme linje – eller, med «Stort
     // bilde/video», kommer inn med ramme + zoom (.ll-hero-frame på wrapperen)
     document.querySelectorAll('.block-banner__background').forEach(function (el) {
@@ -405,18 +415,14 @@
     });
   }
   // Logoen animeres først når bakgrunnen bak den er på plass (wipe-linjen har passert bunnen av logoen)
+  // Logoen venter til bakgrunnen bak den er på plass (laget har vokst forbi bunnen av logoen)
   function logoWhenReady() {
     var logo = document.querySelector('.header__logo');
-    var under = logo && wipeEls.length && wipeEls.some(function (el) {
-      var r = el.getBoundingClientRect(), l = logo.getBoundingClientRect();
-      return r.top <= l.top && r.bottom >= l.bottom;
-    });
-    if (!under) { html.classList.add('ll-logo-go'); return; }
-    var target = logo.getBoundingClientRect().bottom;
+    var l = logo && logo.getBoundingClientRect(), w = wipeLayer && wipeLayer.getBoundingClientRect();
+    if (!l || !w || w.top > l.top || w.top + wipeLayer.offsetHeight < l.bottom) { html.classList.add('ll-logo-go'); return; }
     (function check() {
-      var w = parseFloat(getComputedStyle(html).getPropertyValue('--ll-wipe')) || 0;
-      if (w >= target || !html.classList.contains('ll-wipe-run')) html.classList.add('ll-logo-go');
-      else setTimeout(check, 50); // ikke hver frame – lesingen tvinger fram stilberegning
+      if (!wipeLayer.isConnected || wipeLayer.getBoundingClientRect().bottom >= l.bottom) html.classList.add('ll-logo-go');
+      else setTimeout(check, 50);
     })();
   }
   // Forsidevideo med ramme: logoen venter til rammen har vokst forbi den
@@ -433,13 +439,16 @@
     if (heroFrame) requestAnimationFrame(function () { html.classList.add('ll-hero-go'); logoWhenFrame(); });
     if (!wipeEls.length) { if (!heroFrame) html.classList.add('ll-logo-go'); return; }
     requestAnimationFrame(logoWhenReady);
-    html.addEventListener('animationend', function end(e) {
-      if (e.target !== html || e.animationName !== 'll-wipe') return;
-      html.removeEventListener('animationend', end);
+    var cleaned = false;
+    function cleanup() {
+      if (cleaned) return; cleaned = true;
       wipeEls.forEach(function (el) { el.classList.remove('ll-wipe', 'll-wipe-media'); });
+      if (wipeLayer) wipeLayer.remove();
       html.classList.remove('ll-wipe-run');
       html.classList.add('ll-logo-go');
-    });
+    }
+    if (wipeLayer) wipeLayer.addEventListener('animationend', cleanup);
+    setTimeout(cleanup, num('--ll-wipe-dur') + 200); // reserve (og for video-wipe uten lag)
     html.classList.add('ll-wipe-run');
   }
   function startReveal() {
