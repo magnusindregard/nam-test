@@ -35,9 +35,12 @@
     ['Stort bilde/video: zoom + ramme', 'heroimg', 'll-hero-img'],
     ['Knapper: pil ved hover', 'btnarrow', 'll-btn-arrow-on'],
     ['Lister/meny: vekt ved hover', 'listw', 'll-list-wght'],
+    ['Overskrifter: vekt også ved scroll', 'hscroll', 'll-h-scroll'],
     ['Meny-bakgrunn ovenfra', 'menuwipe', 'll-menu-wipe']
   ];
-  function isOn(t) { var v = store.get(t[1], 'on'); return v !== 'off' && v !== 'none'; }
+  // Av som standard: valg som koster ytelse
+  var DEFAULT_OFF = { hscroll: 1 };
+  function isOn(t) { var v = store.get(t[1], DEFAULT_OFF[t[1]] ? 'off' : 'on'); return v !== 'off' && v !== 'none'; }
   TOGGLES.forEach(function (t) { html.classList.toggle(t[2], isOn(t)); });
 
   /* --- justerbare CSS-variabler (endres live fra panelet, huskes i localStorage) --- */
@@ -127,9 +130,12 @@
     if (root.matches && root.matches('h1, h2, h3, h4')) hs.push(root);
     // Overskrifter: husk faktisk vekt, start på --ll-h-from. Små overskrifter (under --ll-h-min) bare toner inn.
     // Ligger hele teksten i en lenke/span (som hero-tittelen på forsiden), er det den som har vekten.
-    var hMin = num('--ll-h-min');
+    // Vekt-animasjonen legger ut teksten på nytt hver frame – dyrt mens man scroller. Som standard bare for
+    // overskrifter i første skjermbilde (ved lasting); de som kommer inn ved scroll toner inn som resten.
+    var hMin = num('--ll-h-min'), onlyFirst = !html.classList.contains('ll-h-scroll');
     hs.forEach(function (h) {
       if (h.classList.contains('ll-h') || parseFloat(getComputedStyle(h).fontSize) < hMin) return;
+      if (onlyFirst && (revealStarted || h.getBoundingClientRect().top >= window.innerHeight)) return;
       var inner = h.querySelector('a, span');
       var src = inner && inner.textContent.trim() === h.textContent.trim() ? inner : h;
       h.style.setProperty('--ll-w', getComputedStyle(src).fontWeight);
@@ -325,6 +331,7 @@
   function skipStaleQueue() {
     var now = performance.now();
     queued = queued.filter(function (q) { return q.at > now; });
+    if (!queued.length) return; // tom kø: ikke rør starten (f.eks. ventetiden på bakgrunnen)
     var visible = queued.some(function (q) {
       return q.nodes.some(function (n) { var r = n.getBoundingClientRect(); return r.bottom > 0 && r.top < window.innerHeight; });
     });
@@ -369,7 +376,13 @@
   /* Mørk bakgrunn ovenfra: mørke flater i første skjermbilde (header og blokker i main, ikke footer) fylles
      ovenfra og ned av én felles linje (--ll-wipe, 0 → 100vh), så de glir over i hverandre som én flate.
      Bare bakgrunnen animeres; etterpå får elementene tilbake sin egen bakgrunn. */
-  var wipeEls = [], wipeLayer = null;
+  var wipeEls = [], wipeLayer = null, wipeBox = { top: Infinity, bottom: 0 };
+  // Tid (0–1) da en cubic-bezier-kurve har nådd fremdrift p – til å vite når fyllingen passerer logoen
+  function bezierTimeFor(p, x1, y1, x2, y2) {
+    function b(t, a, c) { return 3 * a * t * (1 - t) * (1 - t) + 3 * c * t * t * (1 - t) + t * t * t; }
+    for (var s = 0; s <= 1; s += 0.005) if (b(s, y1, y2) >= p) return b(s, x1, x2);
+    return 1;
+  }
   function isDark(c) {
     var m = c.match(/[\d.]+/g);
     if (!m || (m.length > 3 && +m[3] === 0)) return false;
@@ -378,19 +391,25 @@
   function setupWipe() {
     if (!html.classList.contains('ll-wipe-on')) return;
     // .site-layout: utstillingssiden setter sort bakgrunn der (bak den gjennomsiktige sticky-headeren)
-    var cands = [].slice.call(document.querySelectorAll('.site-layout, header.header, main, main > *, main > * > *, main > * > * > *, main > * > * > * > *'));
+    // .block-banner__background: svart bak forsidevideoen (ligger for dypt for lista under)
+    var cands = [].slice.call(document.querySelectorAll('.site-layout, header.header, main, main > *, main > * > *, main > * > * > *, main > * > * > * > *, .block-banner__background'));
     var top = Infinity, bottom = 0, color = null;
     cands.forEach(function (el) {
-      var r = el.getBoundingClientRect(), c = getComputedStyle(el).backgroundColor;
+      if (el.__llwipe) return;
+      var r = el.getBoundingClientRect(), cs = getComputedStyle(el), c = cs.backgroundColor;
       if (r.height < 40 || r.top >= window.innerHeight || !isDark(c)) return;
+      el.__llwipe = 1;
+      wipeEls.push(el);
+      wipeBox.top = Math.min(wipeBox.top, r.top); wipeBox.bottom = Math.max(wipeBox.bottom, r.bottom);
+      // Posisjonerte elementer fyller seg selv (::before) – laget bak alt ville havnet under omgivelsenes bakgrunn
+      if (cs.position !== 'static') { el.style.setProperty('--ll-wipe-c', c); el.classList.add('ll-wipe', 'll-wipe-self'); return; }
       if (r.top < top) { top = r.top; color = c; }
       bottom = Math.max(bottom, r.bottom);
       el.classList.add('ll-wipe');
-      wipeEls.push(el);
     });
     // Ett lag i den mørke fargen bak alt innhold (z-index -1 tegnes under blokkenes bakgrunn), over de mørke
     // flatene (som er gjennomsiktige mens det pågår). Det skaleres ned ovenfra – bare transform, ingen omtegning.
-    if (wipeEls.length) {
+    if (color) {
       wipeLayer = document.createElement('div');
       wipeLayer.className = 'll-wipe-layer';
       wipeLayer.style.cssText = 'top:' + Math.max(0, Math.round(top)) + 'px;height:' +
@@ -415,15 +434,12 @@
     });
   }
   // Logoen animeres først når bakgrunnen bak den er på plass (wipe-linjen har passert bunnen av logoen)
-  // Logoen venter til bakgrunnen bak den er på plass (laget har vokst forbi bunnen av logoen)
+  // Logoen venter til bakgrunnen bak den er på plass: regn ut fra kurven når fyllingen passerer bunnen av logoen
   function logoWhenReady() {
-    var logo = document.querySelector('.header__logo');
-    var l = logo && logo.getBoundingClientRect(), w = wipeLayer && wipeLayer.getBoundingClientRect();
-    if (!l || !w || w.top > l.top || w.top + wipeLayer.offsetHeight < l.bottom) { html.classList.add('ll-logo-go'); return; }
-    (function check() {
-      if (!wipeLayer.isConnected || wipeLayer.getBoundingClientRect().bottom >= l.bottom) html.classList.add('ll-logo-go');
-      else setTimeout(check, 50);
-    })();
+    var logo = document.querySelector('.header__logo'), l = logo && logo.getBoundingClientRect();
+    if (!l || wipeBox.top > l.top || wipeBox.bottom < l.bottom) { html.classList.add('ll-logo-go'); return; }
+    var p = (l.bottom - wipeBox.top) / (Math.min(wipeBox.bottom, window.innerHeight) - wipeBox.top);
+    setTimeout(function () { html.classList.add('ll-logo-go'); }, num('--ll-wipe-dur') * bezierTimeFor(p, .65, .05, .36, 1));
   }
   // Forsidevideo med ramme: logoen venter til rammen har vokst forbi den
   var heroFrame = null;
@@ -435,17 +451,21 @@
       else setTimeout(check, 50);
     })();
   }
+  // Bakgrunnen først: video-rammen (forsiden) starter når fyllingen er ferdig
+  function startHeroFrame() {
+    requestAnimationFrame(function () { html.classList.add('ll-hero-go'); if (heroFrame && !wipeEls.length) logoWhenFrame(); });
+  }
   function startWipe() {
-    if (heroFrame) requestAnimationFrame(function () { html.classList.add('ll-hero-go'); logoWhenFrame(); });
-    if (!wipeEls.length) { if (!heroFrame) html.classList.add('ll-logo-go'); return; }
+    if (!wipeEls.length) { if (!heroFrame) html.classList.add('ll-logo-go'); startHeroFrame(); return; }
     requestAnimationFrame(logoWhenReady);
     var cleaned = false;
     function cleanup() {
       if (cleaned) return; cleaned = true;
-      wipeEls.forEach(function (el) { el.classList.remove('ll-wipe', 'll-wipe-media'); });
+      wipeEls.forEach(function (el) { el.classList.remove('ll-wipe', 'll-wipe-self', 'll-wipe-media'); });
       if (wipeLayer) wipeLayer.remove();
       html.classList.remove('ll-wipe-run');
       html.classList.add('ll-logo-go');
+      startHeroFrame();
     }
     if (wipeLayer) wipeLayer.addEventListener('animationend', cleanup);
     setTimeout(cleanup, num('--ll-wipe-dur') + 200); // reserve (og for video-wipe uten lag)
@@ -453,7 +473,8 @@
   }
   function startReveal() {
     startWipe();
-    nextSlot = performance.now() + num('--ll-start'); // logoen først, så innholdet
+    // logoen først, så innholdet – og bakgrunnen først hvis den fylles inn
+    nextSlot = performance.now() + Math.max(num('--ll-start'), wipeEls.length ? num('--ll-wipe-dur') : 0);
     revealStarted = true;
     showMenu();
     var els = document.querySelectorAll('.ll-r:not(.header__nav-item):not(.ll-after)');
