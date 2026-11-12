@@ -33,7 +33,7 @@
     ['Parallax på promo-bilder', 'parallax', 'll-parallax'],
     ['Mørk bakgrunn ovenfra', 'wipe', 'll-wipe-on'],
     ['Knapper: pil ved hover', 'btnarrow', 'll-btn-arrow-on'],
-    ['Lister: vekt ved hover', 'listw', 'll-list-wght'],
+    ['Lister/meny: vekt ved hover', 'listw', 'll-list-wght'],
     ['Meny-bakgrunn ovenfra', 'menuwipe', 'll-menu-wipe']
   ];
   function isOn(t) { var v = store.get(t[1], 'on'); return v !== 'off' && v !== 'none'; }
@@ -58,6 +58,7 @@
     ['Hover', 'Vekt-tid lister (ms)', '--ll-hw-dur', 300, 50, 'ms'],
     ['Hover', 'Pil-knapp fade (ms)', '--ll-pill-dur', 150, 25, 'ms'],
     ['Hover', 'Pil sprett (px)', '--ll-arrow-shift', 4, 1, 'px'],
+    ['Hover', 'Pil avstand (px)', '--ll-arrow-gap', 6, 1, 'px'],
     ['Parallax', 'Styrke (%)', '--ll-parallax', 15, 1, ''],
     ['Bakgrunn', 'Ovenfra-tid (ms)', '--ll-wipe-dur', 700, 50, 'ms'],
     ['Sticky', 'Vekt ned til', '--ll-wback-to', 300, 10, ''],

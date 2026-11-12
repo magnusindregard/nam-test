@@ -391,8 +391,14 @@ html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__
   color: var(--ll-pill-fg); translate: var(--ll-pill-px) 0;
 }
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) .button__text { text-decoration: none !important; }
-/* Pila midtstilt mot teksten (SVG-en lå inline på grunnlinjen) */
-html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) { align-items: center; }
+/* Pila midtstilt mot teksten (SVG-en lå inline på grunnlinjen), og tettere på (sidens gap er 10px;
+   hero-lenken på forsiden hadde i tillegg margin på teksten) */
+:root { --ll-arrow-gap: 6px; }
+html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) { align-items: center; gap: var(--ll-arrow-gap) !important; }
+/* Hero-lenken arver sidens regler for «span:first-child/last-child» (margin, understrek og forskyvning ved hover) */
+html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) > span {
+  margin: 0 !important; border-bottom: 0 !important; transform: none !important;
+}
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) > span:not(.button__text) {
   display: inline-flex; align-items: center; border-bottom: 0;
 }
@@ -492,6 +498,14 @@ html.ll-btn-arrow-on .button:is(:hover, :focus-visible) > .ll-btn-arrow svg { op
    kolonnen (og sidens egen pil kommer på lenke-hover), så den gjøres bare så bred som innholdet. */
 :root { --ll-hw-dur: 300ms; }
 html.ll-list-wght .category-list-block__item-link { width: fit-content; max-width: 100%; }
+/* Megamenyen: de store punktene (Besøk, Hva skjer? …) ved hover på teksten og når de er aktive (undermeny åpen) */
+html.ll-list-wght .menu__large-item > span {
+  font-family: "MuseetSansVF-lab", sans-serif !important;
+  transition: font-weight var(--ll-hw-dur) var(--ll-r-ease), color .2s ease-out;
+}
+html.ll-list-wght :is(.menu__large-item > span:hover, .menu__large-item:focus-visible > span, .menu__large-item.active > span) {
+  font-weight: 500;
+}
 /* Trekkspill: teksten fyller ellers raden (flex: 1); knappen er space-between, så pluss-ikonet blir stående */
 html.ll-list-wght .accordion-block__trigger > span { flex: 0 1 auto; }
 html.ll-list-wght :is(.category-list-block__item-link-text, .accordion-block__trigger > span) {
