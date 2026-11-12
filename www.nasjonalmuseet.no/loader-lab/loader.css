@@ -386,8 +386,8 @@ html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) > * {
   transition: color var(--ll-pill-dur) cubic-bezier(.4, 0, .2, 1), translate var(--ll-pill-move-dur) var(--ll-r-ease);
 }
-html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted):is(:hover, :focus-visible)::before { opacity: 1; }
-html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted):is(:hover, :focus-visible) > * {
+html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted):is(:hover, :focus-visible, .ll-hover)::before { opacity: 1; }
+html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted):is(:hover, :focus-visible, .ll-hover) > * {
   color: var(--ll-pill-fg); translate: var(--ll-pill-px) 0;
 }
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) .button__text { text-decoration: none !important; }
@@ -410,11 +410,11 @@ html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) .arrow__animation {
   transition: transform var(--ll-arrow-dur) var(--ll-arrow-ease) !important;
 }
-html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted):is(:hover, :focus-visible) .arrow__animation {
+html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted):is(:hover, :focus-visible, .ll-hover) .arrow__animation {
   transform: translateX(var(--ll-arrow-shift)) !important;
 }
 @media (prefers-reduced-motion: reduce) {
-  html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted):is(:hover, :focus-visible) .arrow__animation { transform: none !important; }
+  html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted):is(:hover, :focus-visible, .ll-hover) .arrow__animation { transform: none !important; }
 }
 
 /* ---------- Parallax på promo-bilder (?parallax=on|off) ----------
@@ -541,3 +541,7 @@ html.ll-menu-wipe .menu-new__curtain--leave-active .menu__wrapper { opacity: 0; 
 @media (prefers-reduced-motion: reduce) {
   html.ll-menu-wipe :is(.menu-new__curtain--enter-active, .menu-new__curtain--leave-active) { animation-duration: 1ms; }
 }
+
+/* ---------- Forside-hero: tittelen ----------
+   Ingen understrek ved hover; i stedet får knappen under («Planlegg ditt besøk») hover-tilstand (.ll-hover, JS). */
+.block-banner h1 a:is(:hover, :focus-visible) { text-decoration: none !important; }

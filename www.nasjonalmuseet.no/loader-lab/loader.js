@@ -223,6 +223,15 @@
       a.innerHTML = '<span class="button__text"></span><span class="button--theme-arrow__inverted">' + LONG_ARROW + '</span>';
       a.firstChild.textContent = text;
     });
+    // Hover/fokus på hero-tittelen gir knappen under hover-tilstand
+    document.querySelectorAll('.block-banner__item').forEach(function (item) {
+      var title = item.querySelector('h1 a'), btn = item.querySelector('.block-banner__item-text a');
+      if (!title || !btn || title.__llh) return;
+      title.__llh = 1;
+      var on = function () { btn.classList.add('ll-hover'); }, off = function () { btn.classList.remove('ll-hover'); };
+      title.addEventListener('mouseenter', on); title.addEventListener('mouseleave', off);
+      title.addEventListener('focus', on); title.addEventListener('blur', off);
+    });
   }
   document.addEventListener('DOMContentLoaded', function () { hydrated.then(convertLinks); });
   function setupReveal() {
