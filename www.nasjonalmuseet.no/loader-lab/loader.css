@@ -199,11 +199,15 @@ html.ll-loader-reveal .ll-lines .ll-wd.ll-in {
 }
 
 /* Kort på samme rad: ett og ett fra venstre (steg i JS), fade + litt nedenfra og opp */
-:root { --ll-row-shift: 12px; --ll-row-duration: 500ms; }
-html.ll-loader-reveal .ll-r.ll-row { transform: translateY(var(--ll-row-shift)); }
+:root { --ll-row-shift: 24px; --ll-row-tilt: 2deg; --ll-row-duration: 700ms; }
+/* translate/rotate (ikke transform) – sidens egen transform (f.eks. en speilvendt pilknapp) blir stående.
+   Elementer med egen transform (.ll-row-keep, JS) får ikke tilt, siden transform-origin ville flyttet dem. */
+html.ll-loader-reveal .ll-r.ll-row { translate: 0 var(--ll-row-shift); }
+html.ll-loader-reveal .ll-r.ll-row:not(.ll-row-keep) { rotate: var(--ll-row-tilt); transform-origin: 0 100%; }
 html.ll-loader-reveal .ll-r.ll-row.ll-in {
-  transform: none;
-  transition: opacity var(--ll-row-duration) ease-out, transform var(--ll-row-duration) var(--ll-r-ease);
+  translate: none; rotate: none;
+  transition: opacity var(--ll-row-duration) ease-out, translate var(--ll-row-duration) var(--ll-r-ease),
+              rotate var(--ll-row-duration) var(--ll-r-ease);
 }
 
 html.ll-loader-reveal .ll-h {
@@ -233,7 +237,7 @@ html.ll-logo-nostroke.ll-loader-reveal .header__logo svg g path { stroke-width: 
 
 @media (prefers-reduced-motion: reduce) {
   html.ll-loader-reveal .ll-r, html.ll-loader-reveal .ll-h, html.ll-loader-reveal .ll-wd { transition-duration: 1ms; }
-  html.ll-loader-reveal .ll-r.ll-row { transform: none; }
+  html.ll-loader-reveal .ll-r.ll-row { translate: none; rotate: none; }
 }
 
 /* ---------- Hover på kort (?hover=tilt|tight|none) ----------
@@ -251,7 +255,7 @@ html.ll-hover-tight :is(.ulc-item, .promo-card, .theme-card):hover img { scale: 
    translate (ikke transform) så det ikke kolliderer med reveal-animasjonen.
    Transition-listen tar med reveal sine egenskaper, siden den overstyrer den. */
 html.ll-hover-tilt :is(.ulc-item, .promo-card, .theme-card) {
-  transition: opacity var(--ll-row-duration) ease-out, transform var(--ll-row-duration) var(--ll-r-ease),
+  transition: opacity var(--ll-row-duration) ease-out, rotate var(--ll-row-duration) var(--ll-r-ease),
               translate var(--ll-tilt-duration) var(--ll-tilt-ease) !important;
 }
 html.ll-hover-tilt :is(.ulc-item, .promo-card, .theme-card):hover { translate: 0 var(--ll-tilt-lift); }
@@ -263,7 +267,7 @@ html.ll-hover-tight :is(.ulc-item__image, .promo-card__image-wrapper, .theme-car
   clip-path: inset(0); transition: clip-path var(--ll-hover-duration) var(--ll-hover-ease);
 }
 html.ll-hover-tight .theme-card {
-  transition: opacity var(--ll-row-duration) ease-out, transform var(--ll-row-duration) var(--ll-r-ease),
+  transition: opacity var(--ll-row-duration) ease-out, translate var(--ll-row-duration) var(--ll-r-ease), rotate var(--ll-row-duration) var(--ll-r-ease),
               clip-path var(--ll-hover-duration) var(--ll-hover-ease) !important;
 }
 html.ll-hover-tight :is(.ulc-item__image, .promo-card__image-wrapper, .promo-card__image, .theme-card__image) {

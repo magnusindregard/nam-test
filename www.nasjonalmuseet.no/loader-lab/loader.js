@@ -47,7 +47,9 @@
   var VARS = [
     ['Innlasting', 'Start (ms)', '--ll-start', 500, 50, 'ms'],
     ['Innlasting', 'Steg per linje (ms)', '--ll-step', 120, 10, 'ms'],
-    ['Innlasting', 'Steg per kort (ms)', '--ll-row-step', 90, 10, 'ms'],
+    ['Innlasting', 'Steg per kort (ms)', '--ll-row-step', 160, 10, 'ms'],
+    ['Innlasting', 'Kort: tilt (grader)', '--ll-row-tilt', 2, 0.5, 'deg'],
+    ['Innlasting', 'Kort: løft (px)', '--ll-row-shift', 24, 2, 'px'],
     ['Innlasting', 'Vertikal bevegelse (px)', '--ll-shift', 10, 2, 'px'],
     ['Innlasting', 'Liste-rader spredt (px)', '--ll-spread', 40, 5, 'px'],
     ['Innlasting', 'Linjer hvit → grå (ms)', '--ll-line-dur', 1200, 100, 'ms'],
@@ -355,7 +357,10 @@
     els.forEach(function (el, i) {
       var hs = [].slice.call(el.querySelectorAll('.ll-h'));
       if (el.classList.contains('ll-h')) hs.push(el);
-      if (isRow) el.classList.add('ll-row');
+      if (isRow) {
+        if (getComputedStyle(el).transform !== 'none') el.classList.add('ll-row-keep');
+        el.classList.add('ll-row');
+      }
       if (el.__llWords) {
         // Avsnitt: hver linje får sitt eget steg
         el.classList.add('ll-in');
