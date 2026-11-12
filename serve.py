@@ -22,6 +22,7 @@ MS01 = "https://ms01.nasjonalmuseet.no"
 IMG_EXT = (".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif", ".svg")
 ARGS = None
 PAGE_CACHE = {}  # undersider hentet fra nasjonalmuseet.no, så hver lasting tar like lang tid
+PAGE_TTL = 600   # sekunder – nasjonalmuseet.no publiserer nye bygg, og gammel HTML peker da på filer som er borte
 
 LOADER_TAGS = b'<link rel="stylesheet" href="/loader-lab/loader.css">\n<script src="/loader-lab/loader.js"></script>\n'
 STRIP = [  # det samme som ble fjernet fra den lokale kopien av /samlingen/
@@ -115,10 +116,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # Undersider: hent uten loader-lab-parametrene, og cache HTML-en
             parts = urllib.parse.urlsplit(self.path)
             q = [(k, v) for k, v in urllib.parse.parse_qsl(parts.query, keep_blank_values=True)
-                 if k not in ("loader", "img", "min", "hover", "menu", "sticky", "grow", "arrowbtn", "parallax", "wipe", "btnarrow", "listw", "menuwipe", "heroimg", "delay", "imgdelay", "headline")]
+                 if k not in ("loader", "img", "min", "hover", "menu", "sticky", "grow", "arrowbtn", "parallax", "wipe", "btnarrow", "listw", "menuwipe", "heroimg", "lockup", "delay", "imgdelay", "headline")]
             url = UPSTREAM + parts.path + ("?" + urllib.parse.urlencode(q) if q else "")
-        if url in PAGE_CACHE:
-            ctype, body = PAGE_CACHE[url]
+        if url in PAGE_CACHE and time.time() - PAGE_CACHE[url][2] < PAGE_TTL:
+            ctype, body, _ = PAGE_CACHE[url]
             self.send_response(200)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(body)))
@@ -133,7 +134,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 ctype = r.headers.get("Content-Type", mimetypes.guess_type(url)[0] or "application/octet-stream")
                 if ctype.startswith("text/html"):
                     body = localize(body)
-                    PAGE_CACHE[url] = (ctype, body)
+                    PAGE_CACHE[url] = (ctype, body, time.time())
                 self.send_response(r.status)
                 self.send_header("Content-Type", ctype)
                 self.send_header("Content-Length", str(len(body)))

@@ -33,6 +33,7 @@
     ['Parallax på promo-bilder', 'parallax', 'll-parallax'],
     ['Mørk bakgrunn ovenfra', 'wipe', 'll-wipe-on'],
     ['Stort bilde/video: zoom + ramme', 'heroimg', 'll-hero-img'],
+    ['Utstilling: tittel-lockup', 'lockup', 'll-lockup'],
     ['Knapper: pil ved hover', 'btnarrow', 'll-btn-arrow-on'],
     ['Lister/meny: vekt ved hover', 'listw', 'll-list-wght'],
     ['Overskrifter: vekt også ved scroll', 'hscroll', 'll-h-scroll'],
@@ -73,6 +74,8 @@
     ['Stort bilde', 'Tid (ms)', '--ll-hero-dur', 1400, 100, 'ms'],
     ['Forsidevideo', 'Ramme fra (% inn)', '--ll-video-inset', 12, 1, ''],
     ['Forsidevideo', 'Tid (ms)', '--ll-video-dur', 2000, 100, 'ms'],
+    ['Lockup', 'Tittel-fart (× scroll)', '--ll-lock-speed', 1.4, 0.1, ''],
+    ['Lockup', 'Luft rundt tittel (px)', '--ll-lock-gap', 64, 8, 'px'],
     ['Sticky', 'Fader ved (% av bildet)', '--ll-sticky-stop', 45, 5, ''],
     ['Sticky', 'Fade-lengde (px scroll)', '--ll-fade-len', 100, 25, 'px']
   ];
@@ -628,6 +631,23 @@
       html.style.setProperty('--ll-fade-start', y + 'px');
       html.style.setProperty('--ll-fade-end', Math.round(y + len) + 'px');
 
+      // Lockup: tittelen glir fra der den står til under bildeteksten (bildet ferdig vokst), over scroll-lengden
+      // forflytning / fart. Nav og logo fader ut idet den lander.
+      if (html.classList.contains('ll-lockup')) {
+        hc.style.marginBottom = media.style.marginTop = '';
+        var gapL = num('--ll-lock-gap'), speed = Math.max(0.2, num('--ll-lock-speed') || 1);
+        html.style.setProperty('--ll-lock-space', Math.round(hc.offsetHeight + gapL) + 'px');
+        var mcs = getComputedStyle(media), mr2 = media.getBoundingClientRect();
+        var contentBottom = mr2.top + window.scrollY + media.clientHeight - parseFloat(mcs.paddingBottom);
+        var target = contentBottom + (grow ? h * (s - 1) : 0) + gapL;
+        var d = Math.round(target - top0); // top0: tittelens plass før forflytning
+        var end = Math.round(d / speed);
+        html.style.setProperty('--ll-lock-d', d + 'px');
+        html.style.setProperty('--ll-lock-end', end + 'px');
+        html.style.setProperty('--ll-fade-start', Math.max(0, end - len) + 'px');
+        html.style.setProperty('--ll-fade-end', end + 'px');
+        return;
+      }
       // Sticky slipper når tittelens margin-boks treffer bunnen av forelderen. Stor margin-bottom på tittelen,
       // og bildet trukket like mye opp igjen (oppsettet er uendret), så slippet skjer når bunnen av tittelen
       // treffer bunnen av bildet (ferdig vokst).
@@ -730,7 +750,7 @@
         var v = VARS[inp.dataset.var];
         html.style.setProperty(v[2], inp.value + v[5]);
         store.set('v' + v[2], inp.value);
-        if (v[2] === '--ll-fade-len' || v[2] === '--ll-sticky-stop') stickyUpdate();
+        if (/--ll-(fade-len|sticky-stop|lock-)/.test(v[2])) stickyUpdate();
         
       };
     });

@@ -360,8 +360,8 @@ html.ll-event.ll-sticky .site-layout { background-color: var(--ll-event-bg, #000
 }
 
 /* ---------- Pil-lenke som knapp (?arrowbtn=on|off) – som david-andersen.no ----------
-   «Se alle … →»: i ro står teksten venstrestilt som vanlig. Ved hover tones en sort knapp (radius 4px) inn,
-   teksten glir inn til knappens padding, tekst og pil blir hvite, og pila spretter litt til høyre.
+   «Se alle … →»: i ro står teksten venstrestilt som vanlig. Ved hover tones en sekundærknapp inn (1px ramme i
+   tekstfargen, radius 4px, ingen fyll), teksten glir inn til knappens padding, og pila spretter litt til høyre.
    Knappen er ::before, som stikker ut over og til høyre for lenken. Nederst tar paddingen plass i layouten
    (neste seksjon ligger ellers oppå). Bevegelse og farger ligger på ::before og barna (ikke lenken), så de
    ikke arver reveal sin transition-delay. */
@@ -373,14 +373,13 @@ html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__
   position: relative; isolation: isolate;
   padding: 0 0 var(--ll-pill-py) 0 !important;
   border-bottom-color: transparent !important;
-  --ll-pill-bg: #000; --ll-pill-fg: #fff;
 }
-html.ll-arrow-btn :is(a, button).button--theme-arrow__inverted { --ll-pill-bg: #fff; --ll-pill-fg: #000; }
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted)::before {
   content: ""; position: absolute; z-index: -1; border-radius: var(--ll-pill-radius);
   top: calc(-1 * var(--ll-pill-py)); bottom: 0; left: 0;
   right: calc(-2 * var(--ll-pill-px) - var(--ll-arrow-shift));
-  background: var(--ll-pill-bg); opacity: 0;
+  /* sekundærknapp: ramme i tekstfargen, ingen fyll */
+  background: transparent; border: 1px solid currentColor; box-sizing: border-box; opacity: 0;
   transition: opacity var(--ll-pill-dur) cubic-bezier(.4, 0, .2, 1);
 }
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) > * {
@@ -389,7 +388,7 @@ html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__
 }
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted):is(:hover, :focus-visible, .ll-hover)::before { opacity: 1; }
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted):is(:hover, :focus-visible, .ll-hover) > * {
-  color: var(--ll-pill-fg); translate: var(--ll-pill-px) 0;
+  translate: var(--ll-pill-px) 0;
 }
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) .button__text { text-decoration: none !important; }
 /* Pila midtstilt mot teksten (SVG-en lå inline på grunnlinjen), og tettere på (sidens gap er 10px;
@@ -619,3 +618,21 @@ html.ll-loader-reveal.ll-hero-img.ll-hero-go .ll-hero-frame video {
    Grå (#afafaf) som standard – hvit ved hover. */
 .header__logotext svg path { transition: fill .2s ease-out; }
 .header__logotext a:is(:hover, :focus-visible) svg path { fill: #fff; }
+
+/* ---------- Utstillingsside: tittel-lockup (?lockup=on|off) ----------
+   Tittel og stikktittel glir nedover over bildet (litt raskere enn bildet scroller opp) og lander under
+   bildeteksten, med ingressen under – som i Figma. Plass reserveres under bildet (--ll-lock-space);
+   forflytning (--ll-lock-d) og scroll-lengde (--ll-lock-end) regnes ut i JS. Erstatter sticky-tittelen. */
+html.ll-event.ll-lockup .ll-sticky-h { position: relative !important; top: auto; z-index: 3; }
+html.ll-event.ll-lockup .hero__media { padding-bottom: calc(var(--ll-grow-extra, 0px) + var(--ll-lock-space, 0px)) !important; }
+@supports (animation-timeline: scroll()) {
+  html.ll-event.ll-lockup .ll-sticky-h {
+    animation: ll-lock linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0px var(--ll-lock-end, 600px);
+  }
+}
+@keyframes ll-lock { from { translate: 0 0; } to { translate: 0 var(--ll-lock-d, 0px); } }
+@media (prefers-reduced-motion: reduce) {
+  html.ll-event.ll-lockup .ll-sticky-h { animation: none; translate: 0 var(--ll-lock-d, 0px); }
+}
