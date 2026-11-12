@@ -399,3 +399,21 @@ html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__
 @media (prefers-reduced-motion: reduce) {
   html.ll-parallax .promotion-block__image .responsive-image__image { animation: none; scale: 1; }
 }
+
+/* ---------- Mørk bakgrunn ovenfra (?wipe=on|off) ----------
+   Mørke flater (merket .ll-wipe i JS, med egen farge i --ll-wipe-c og topp i --ll-top) får bakgrunnen som en
+   gradient som fylles ned til den felles linjen --ll-wipe. Linjen animeres fra 0 til 100vh på <html>. */
+:root { --ll-wipe-dur: 700ms; --ll-wipe-ease: cubic-bezier(.65, .05, .36, 1); }
+@property --ll-wipe { syntax: "<length>"; inherits: true; initial-value: 0px; }
+html.ll-wipe-run { animation: ll-wipe var(--ll-wipe-dur) var(--ll-wipe-ease) both; }
+@keyframes ll-wipe { from { --ll-wipe: 0px; } to { --ll-wipe: 100vh; } }
+html.ll-loader-reveal .ll-wipe {
+  background-color: transparent !important;
+  background-image: linear-gradient(var(--ll-wipe-c), var(--ll-wipe-c)) !important;
+  background-repeat: no-repeat !important;
+  background-position: 0 0 !important;
+  background-size: 100% clamp(0px, calc(var(--ll-wipe) - var(--ll-top)), 100%) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.ll-wipe-run { animation-duration: 1ms; }
+}

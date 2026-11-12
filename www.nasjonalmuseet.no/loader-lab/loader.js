@@ -30,7 +30,8 @@
     ['Sticky tittel/nav', 'sticky', 'll-sticky'],
     ['Bilde vokser', 'grow', 'll-grow'],
     ['Pil-lenke som knapp', 'arrowbtn', 'll-arrow-btn'],
-    ['Parallax på promo-bilder', 'parallax', 'll-parallax']
+    ['Parallax på promo-bilder', 'parallax', 'll-parallax'],
+    ['Mørk bakgrunn ovenfra', 'wipe', 'll-wipe-on']
   ];
   function isOn(t) { var v = store.get(t[1], 'on'); return v !== 'off' && v !== 'none'; }
   TOGGLES.forEach(function (t) { html.classList.toggle(t[2], isOn(t)); });
@@ -51,6 +52,7 @@
     ['Hover', 'Pil-knapp fade (ms)', '--ll-pill-dur', 150, 25, 'ms'],
     ['Hover', 'Pil sprett (px)', '--ll-arrow-shift', 12, 2, 'px'],
     ['Parallax', 'Styrke (%)', '--ll-parallax', 8, 1, ''],
+    ['Bakgrunn', 'Ovenfra-tid (ms)', '--ll-wipe-dur', 700, 50, 'ms'],
     ['Sticky', 'Vekt ned til', '--ll-wback-to', 300, 10, ''],
     ['Sticky', 'Vekt ned (px scroll)', '--ll-wback-len', 150, 25, 'px'],
     ['Sticky', 'Fade-lengde (px scroll)', '--ll-fade-len', 400, 25, 'px']
@@ -188,6 +190,7 @@
   function setupReveal() {
     var logo = document.querySelector('.header__logo');
     if (logo) html.style.setProperty('--ll-logo-bg', bgOf(logo));
+    setupWipe();
     document.querySelectorAll(ROOTS).forEach(tag);
     // Menypunktene i toppen: egen tur, kun fade (ikke via IntersectionObserver)
     document.querySelectorAll('.header__nav-item').forEach(function (el) { el.classList.add('ll-r'); });
@@ -296,7 +299,39 @@
       if (after.length) show(after);
     }
   }
+  /* Mørk bakgrunn ovenfra: mørke flater i første skjermbilde (header og blokker i main, ikke footer) fylles
+     ovenfra og ned av én felles linje (--ll-wipe, 0 → 100vh), så de glir over i hverandre som én flate.
+     Bare bakgrunnen animeres; etterpå får elementene tilbake sin egen bakgrunn. */
+  var wipeEls = [];
+  function isDark(c) {
+    var m = c.match(/[\d.]+/g);
+    if (!m || (m.length > 3 && +m[3] === 0)) return false;
+    return (0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]) / 255 < 0.35;
+  }
+  function setupWipe() {
+    if (!html.classList.contains('ll-wipe-on')) return;
+    var cands = [].slice.call(document.querySelectorAll('header.header, main, main > *, main > * > *, main > * > * > *, main > * > * > * > *'));
+    cands.forEach(function (el) {
+      var r = el.getBoundingClientRect(), c = getComputedStyle(el).backgroundColor;
+      if (r.height < 40 || r.top >= window.innerHeight || !isDark(c)) return;
+      el.style.setProperty('--ll-wipe-c', c);
+      el.style.setProperty('--ll-top', Math.round(r.top) + 'px');
+      el.classList.add('ll-wipe');
+      wipeEls.push(el);
+    });
+  }
+  function startWipe() {
+    if (!wipeEls.length) return;
+    html.addEventListener('animationend', function end(e) {
+      if (e.target !== html || e.animationName !== 'll-wipe') return;
+      html.removeEventListener('animationend', end);
+      wipeEls.forEach(function (el) { el.classList.remove('ll-wipe'); });
+      html.classList.remove('ll-wipe-run');
+    });
+    html.classList.add('ll-wipe-run');
+  }
   function startReveal() {
+    startWipe();
     nextSlot = performance.now() + num('--ll-start'); // logoen først, så innholdet
     revealStarted = true;
     showMenu();
