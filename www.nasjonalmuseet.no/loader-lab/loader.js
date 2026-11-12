@@ -270,7 +270,8 @@
   }
   function showMenu() {
     document.querySelectorAll('.header__nav-item').forEach(function (el) {
-      el.style.transitionDelay = MENU_DELAY + 'ms';
+      // Forsiden med video: nav kommer når videoen er på vei inn
+      el.style.transitionDelay = (heroFrame ? Math.max(MENU_DELAY, num('--ll-hero-dur') * 0.35) : MENU_DELAY) + 'ms';
       requestAnimationFrame(function () { el.classList.add('ll-in'); });
     });
   }
@@ -394,8 +395,11 @@
     // .block-banner__background: svart bak forsidevideoen (ligger for dypt for lista under)
     var cands = [].slice.call(document.querySelectorAll('.site-layout, header.header, main, main > *, main > * > *, main > * > * > *, main > * > * > * > *, .block-banner__background'));
     var top = Infinity, bottom = 0, color = null;
+    var heroVideo = html.classList.contains('ll-hero-img');
     cands.forEach(function (el) {
       if (el.__llwipe) return;
+      // Forsidevideo med ramme + zoom: ingen svart fylling bak – videoen kommer først
+      if (heroVideo && el.matches('.block-banner__background') && el.querySelector('.block-banner__background-wrapper')) return;
       var r = el.getBoundingClientRect(), cs = getComputedStyle(el), c = cs.backgroundColor;
       if (r.height < 40 || r.top >= window.innerHeight || !isDark(c)) return;
       el.__llwipe = 1;
@@ -474,7 +478,8 @@
   function startReveal() {
     startWipe();
     // logoen først, så innholdet – og bakgrunnen først hvis den fylles inn
-    nextSlot = performance.now() + Math.max(num('--ll-start'), wipeEls.length ? num('--ll-wipe-dur') : 0);
+    nextSlot = performance.now() + Math.max(num('--ll-start'), wipeEls.length ? num('--ll-wipe-dur') : 0,
+                                            heroFrame ? num('--ll-hero-dur') * 0.5 : 0);
     revealStarted = true;
     showMenu();
     var els = document.querySelectorAll('.ll-r:not(.header__nav-item):not(.ll-after)');
