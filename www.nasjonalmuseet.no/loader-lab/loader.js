@@ -59,7 +59,7 @@
     ['Hover', 'Vekt-tid lister (ms)', '--ll-hw-dur', 300, 50, 'ms'],
     ['Hover', 'Pil-knapp fade (ms)', '--ll-pill-dur', 150, 25, 'ms'],
     ['Hover', 'Pil sprett (px)', '--ll-arrow-shift', 4, 1, 'px'],
-    ['Hover', 'Pil avstand (px)', '--ll-arrow-gap', 6, 1, 'px'],
+    ['Hover', 'Pil avstand (px)', '--ll-arrow-gap', 12, 1, 'px'],
     ['Parallax', 'Styrke (%)', '--ll-parallax', 25, 1, ''],
     ['Bakgrunn', 'Ovenfra-tid (ms)', '--ll-wipe-dur', 700, 50, 'ms'],
     ['Sticky', 'Fade-lengde (px scroll)', '--ll-fade-len', 400, 25, 'px']
