@@ -66,7 +66,7 @@
     ['Stort bilde', 'Zoom fra', '--ll-hero-zoom', 1.15, 0.01, ''],
     ['Stort bilde', 'Ramme fra (% inn)', '--ll-hero-inset', 6, 1, '%'],
     ['Stort bilde', 'Tid (ms)', '--ll-hero-dur', 1400, 100, 'ms'],
-    ['Sticky', 'Fader ved (% av bildet)', '--ll-sticky-stop', 70, 5, ''],
+    ['Sticky', 'Fader ved (% av bildet)', '--ll-sticky-stop', 60, 5, ''],
     ['Sticky', 'Fade-lengde (px scroll)', '--ll-fade-len', 100, 25, 'px']
   ];
   function varVal(v) { return store.get('v' + v[2], String(v[3])); }
@@ -556,7 +556,7 @@
       // Fade starter når midten av tittelen treffer --ll-sticky-stop % ned på bildet (bildet kan vokse underveis)
       var cs = getComputedStyle(html);
       var len = parseFloat(cs.getPropertyValue('--ll-fade-len')) || 100;
-      var stop = (parseFloat(cs.getPropertyValue('--ll-sticky-stop')) || 70) / 100;
+      var stop = (parseFloat(cs.getPropertyValue('--ll-sticky-stop')) || 60) / 100;
       var growEnd = Math.max(1, Math.round(mediaTop));
       var titleMid = top0 + hc.offsetHeight / 2, y = 0;
       for (; y < mediaTop + h * s; y++) {
