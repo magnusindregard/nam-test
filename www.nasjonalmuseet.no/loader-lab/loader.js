@@ -34,6 +34,9 @@
 
   /* --- justerbare CSS-variabler (endres live fra panelet, huskes i localStorage) --- */
   var VARS = [
+    ['Innlasting', 'Start (ms)', '--ll-start', 500, 50, 'ms'],
+    ['Innlasting', 'Steg per linje (ms)', '--ll-step', 120, 10, 'ms'],
+    ['Innlasting', 'Steg per kort (ms)', '--ll-row-step', 90, 10, 'ms'],
     ['Overskrift', 'Vekt fra', '--ll-h-from', 300, 10, ''],
     ['Overskrift', 'Vekt-tid (ms)', '--ll-h-duration', 1000, 100, 'ms'],
     ['Overskrift', 'Min. str. (px, last på nytt)', '--ll-h-min', 28, 2, 'px'],
@@ -70,7 +73,9 @@
 
   /* --- reveal: blokker toner inn én etter én nedover når de kommer til syne ---
      Rekkefølge: logo (0) → tittel (+200) → meny (+MENU_DELAY) → ingress (tittel + AFTER_TITLE) → resten */
-  var STEP = 80, MAX_DELAY = 600, nextSlot = 0;
+  // Steg/start leses fra panelet (--ll-step, --ll-row-step, --ll-start). MAX_DELAY: lengste kø før noe vises.
+  var MAX_DELAY = 2500, nextSlot = 0;
+  function num(k) { for (var i = 0; i < VARS.length; i++) if (VARS[i][2] === k) return parseFloat(varVal(VARS[i])) || 0; return 0; }
   var MENU_DELAY = 400, AFTER_TITLE = 300;
   var io = null, revealStarted = false;
   function bgOf(el) {
@@ -91,7 +96,7 @@
     if (root.matches && root.matches('h1, h2, h3, h4')) hs.push(root);
     // Overskrifter: husk faktisk vekt, start på --ll-h-from. Små overskrifter (under --ll-h-min) bare toner inn.
     // Ligger hele teksten i en lenke/span (som hero-tittelen på forsiden), er det den som har vekten.
-    var hMin = parseFloat(varVal(VARS[2])) || 0;
+    var hMin = num('--ll-h-min');
     hs.forEach(function (h) {
       if (h.classList.contains('ll-h') || parseFloat(getComputedStyle(h).fontSize) < hMin) return;
       var inner = h.querySelector('a, span');
@@ -107,27 +112,46 @@
       el.__llr = 1;
       el.classList.add('ll-r');
       if (el.matches(AFTER_TITLE_SEL)) { el.classList.add('ll-after'); return; }
+      // Avsnitt kommer inn linje for linje
+      if (el.tagName === 'P' && el.textContent.trim()) { el.__llWords = wrapWords(el, 'll-wd'); el.classList.add('ll-lines'); }
       added.push(el);
     });
     return added;
   }
   // Lås linjeskiftene i en overskrift slik de blir ved full vekt (den bredeste den animeres til),
   // så teksten ikke hopper mellom én og to linjer når vekten endres. Gjøres på nytt ved resize.
-  var locked = [];
-  function lockLines(h) {
-    if (h.__llOrig == null) { h.__llOrig = h.innerHTML; locked.push(h); }
-    else h.innerHTML = h.__llOrig;
-    var words = [], walker = document.createTreeWalker(h, NodeFilter.SHOW_TEXT), texts = [];
+  // Pakker hvert ord i en <span> (struktur som lenker beholdes). Returnerer spanene.
+  function wrapWords(el, cls) {
+    var words = [], walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT), texts = [];
     while (walker.nextNode()) texts.push(walker.currentNode);
     texts.forEach(function (t) {
       var parts = t.textContent.split(/(\s+)/), frag = document.createDocumentFragment();
       parts.forEach(function (w) {
         if (!w) return;
         if (/^\s+$/.test(w)) { frag.appendChild(document.createTextNode(w)); return; }
-        var s = document.createElement('span'); s.textContent = w; frag.appendChild(s); words.push(s);
+        var s = document.createElement('span'); s.textContent = w; if (cls) s.className = cls;
+        frag.appendChild(s); words.push(s);
       });
       t.parentNode.replaceChild(frag, t);
     });
+    return words;
+  }
+  // Grupperer ord-spans i linjer etter plassering på skjermen
+  function linesOf(words) {
+    var lines = [], prev = null;
+    words.forEach(function (w) {
+      var top = w.getBoundingClientRect().top;
+      if (prev == null || top > prev + 2) lines.push([]);
+      lines[lines.length - 1].push(w);
+      prev = top;
+    });
+    return lines;
+  }
+  var locked = [];
+  function lockLines(h) {
+    if (h.__llOrig == null) { h.__llOrig = h.innerHTML; locked.push(h); }
+    else h.innerHTML = h.__llOrig;
+    var words = wrapWords(h);
     // Mål ved full vekt uten overgang (inline !important slår stilarkets !important)
     h.style.setProperty('transition', 'none', 'important');
     h.style.setProperty('font-weight', getComputedStyle(h).getPropertyValue('--ll-w') || '500', 'important');
@@ -224,22 +248,41 @@
       else setTimeout(check, 100);
     })();
   }
-  function show(els) {
+  // Neste ledige tidspunkt i køen (ms fra nå), og flytt køen et steg fram
+  function slot(step) {
     var now = performance.now();
     var at = Math.min(Math.max(now, nextSlot), now + MAX_DELAY);
-    nextSlot = at + STEP;
-    var delay = Math.round(at - now) + 'ms';
+    nextSlot = at + step;
+    return Math.round(at - now);
+  }
+  function reveal(nodes, delay) {
+    nodes.forEach(function (n) { n.style.transitionDelay = delay + 'ms'; });
+    // en frame så .ll-row sin startposisjon er på plass før overgangen
+    requestAnimationFrame(function () { nodes.forEach(function (n) { n.classList.add('ll-in'); }); });
+  }
+  function show(els) {
+    var step = num('--ll-step'), rowStep = num('--ll-row-step');
     var isRow = els.length > 1;
-    // Etter sidetittelen: lengre pause, så tittelen rekker å komme i gang før ingressen
-    var isTitle = els.some(function (el) { return el.tagName === 'H1' || el.querySelector('h1'); });
-    if (isTitle) nextSlot = at + AFTER_TITLE;
-    els.forEach(function (el) {
+    // Kort på samme rad: ett og ett, venstre først
+    if (isRow) els = els.slice().sort(function (a, b) { return a.getBoundingClientRect().left - b.getBoundingClientRect().left; });
+    var isTitle = false;
+    els.forEach(function (el, i) {
       var hs = [].slice.call(el.querySelectorAll('.ll-h'));
       if (el.classList.contains('ll-h')) hs.push(el);
       if (isRow) el.classList.add('ll-row');
-      [el].concat(hs).forEach(function (n) { n.style.transitionDelay = delay; });
-      // en frame så .ll-row sin startposisjon er på plass før overgangen
-      requestAnimationFrame(function () { [el].concat(hs).forEach(function (n) { n.classList.add('ll-in'); }); });
+      if (el.__llWords) {
+        // Avsnitt: hver linje får sitt eget steg
+        el.classList.add('ll-in');
+        linesOf(el.__llWords).forEach(function (line) { reveal(line, slot(step)); });
+        return;
+      }
+      var d = slot(isRow && i < els.length - 1 ? rowStep : step);
+      reveal([el].concat(hs), d);
+      // Etter sidetittelen: lengre pause, så tittelen rekker å komme i gang før ingressen
+      if (el.tagName === 'H1' || el.querySelector('h1')) {
+        isTitle = true;
+        nextSlot = Math.max(nextSlot, performance.now() + d + AFTER_TITLE);
+      }
     });
     if (isTitle) {
       var after = [].filter.call(document.querySelectorAll('.ll-after'), function (a) { return !a.__lls; });
@@ -248,7 +291,7 @@
     }
   }
   function startReveal() {
-    nextSlot = performance.now() + 200; // logoen først
+    nextSlot = performance.now() + num('--ll-start'); // logoen først, så innholdet
     revealStarted = true;
     showMenu();
     var els = document.querySelectorAll('.ll-r:not(.header__nav-item):not(.ll-after)');

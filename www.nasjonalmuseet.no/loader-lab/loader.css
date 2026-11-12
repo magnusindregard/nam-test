@@ -158,7 +158,12 @@ html.ll-loading.ll-loader-reveal #ll-panel { visibility: visible; }
 html.ll-loader-reveal .ll-r { opacity: 0; transition: none; }
 html.ll-loader-reveal .ll-r.ll-in { opacity: 1; transition: opacity var(--ll-r-duration) ease-out; }
 
-/* Kort på samme rad: samtidig, fade + litt nedenfra og opp */
+/* Avsnitt linje for linje: selve avsnittet er synlig, ordene (.ll-wd) toner inn linje for linje */
+html.ll-loader-reveal .ll-r.ll-lines { opacity: 1; transition: none; }
+html.ll-loader-reveal .ll-lines .ll-wd { opacity: 0; transition: none; }
+html.ll-loader-reveal .ll-lines .ll-wd.ll-in { opacity: 1; transition: opacity var(--ll-r-duration) ease-out; }
+
+/* Kort på samme rad: ett og ett fra venstre (steg i JS), fade + litt nedenfra og opp */
 :root { --ll-row-shift: 12px; --ll-row-duration: 500ms; }
 html.ll-loader-reveal .ll-r.ll-row { transform: translateY(var(--ll-row-shift)); }
 html.ll-loader-reveal .ll-r.ll-row.ll-in {
@@ -190,7 +195,7 @@ html.ll-done.ll-loader-reveal .header__logo svg { opacity: 1; }
 html.ll-done.ll-loader-reveal .header__logo svg g path { stroke-width: 0; }
 
 @media (prefers-reduced-motion: reduce) {
-  html.ll-loader-reveal .ll-r, html.ll-loader-reveal .ll-h { transition-duration: 1ms; }
+  html.ll-loader-reveal .ll-r, html.ll-loader-reveal .ll-h, html.ll-loader-reveal .ll-wd { transition-duration: 1ms; }
   html.ll-loader-reveal .ll-r.ll-row { transform: none; }
 }
 
