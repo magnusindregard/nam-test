@@ -548,6 +548,7 @@ html.ll-menu-wipe .menu-new__curtain--leave-active .menu__wrapper { opacity: 0; 
 /* ---------- Forside-hero: tittelen ----------
    Ingen understrek ved hover; i stedet får knappen under («Planlegg ditt besøk») hover-tilstand (.ll-hover, JS). */
 .block-banner h1 a:is(:hover, :focus-visible) { text-decoration: none !important; }
+.block-banner h1 { text-shadow: none !important; }
 
 /* ---------- Stort bilde på utstillingssiden og forsidevideoen (?heroimg=on|off) ----------
    Når bildet/videoen kommer inn: rammen går fra mindre (--ll-hero-inset % inn fra kantene) til full størrelse,
