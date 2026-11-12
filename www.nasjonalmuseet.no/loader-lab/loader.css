@@ -380,7 +380,8 @@ html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__
   transition: opacity var(--ll-pill-dur) cubic-bezier(.4, 0, .2, 1);
 }
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted) > * {
-  transition: color var(--ll-pill-dur) cubic-bezier(.4, 0, .2, 1), translate var(--ll-pill-move-dur) var(--ll-r-ease);
+  /* !important: hero-lenken arver sidens «span:last-child { transition: transform .1s }», og da hoppet pila */
+  transition: color var(--ll-pill-dur) cubic-bezier(.4, 0, .2, 1), translate var(--ll-pill-move-dur) var(--ll-r-ease) !important;
 }
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted):is(:hover, :focus-visible, .ll-hover)::before { opacity: 1; }
 html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__inverted):is(:hover, :focus-visible, .ll-hover) > * {
