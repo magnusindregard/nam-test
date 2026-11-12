@@ -309,28 +309,9 @@ html.ll-menu-anim .ll-mt {
 
 /* ---------- Utstillingsside: sticky tittel (?sticky=on|off) ----------
    --ll-sticky-top (startposisjonen) og margin-trikset som bestemmer når den slipper, settes i JS (setupSticky). */
-html.ll-sticky .ll-sticky-h { position: sticky; top: var(--ll-sticky-top); z-index: 3; mix-blend-mode: difference; }
-/* difference: hvit tekst blir sort på hvit side, hvit på sort side og invertert over bildet (sort tekst forsvant på lyse sider) */
-html.ll-sticky .ll-sticky-h, html.ll-sticky .ll-sticky-h * { color: #fff !important; }
+html.ll-sticky .ll-sticky-h { position: sticky; top: var(--ll-sticky-top); z-index: 3; }
 
-/* Nav og logo står stille som tittelen. Når midten av tittelen treffer midten av bildet, fader alle raskt ut
-   samtidig (--ll-fade-start/-end settes i JS). Stikktittelen («Utstilling») fader ut med en gang man scroller. Headeren er gjennomsiktig så bildet kan vokse opp under den. */
-html.ll-event.ll-sticky .header-menu-new { position: sticky; top: 0; z-index: 10; }
-html.ll-event.ll-sticky header.header { background: transparent !important; }
-/* ...og bak den gjennomsiktige headeren skal sidens egen bakgrunn (sort) vises, ikke hvitt */
-html.ll-event.ll-sticky .site-layout { background-color: var(--ll-event-bg, #000); }
-@supports (animation-timeline: scroll()) {
-  html.ll-event.ll-sticky .header-menu-new {
-    animation: ll-sticky-out linear both;
-    animation-timeline: scroll(root);
-    animation-range: var(--ll-fade-start, 0px) var(--ll-fade-end, 150px);
-  }
-  html.ll-event.ll-sticky .ll-sticky-h {
-    animation: ll-sticky-out linear both;
-    animation-timeline: scroll(root);
-    animation-range: var(--ll-fade-start, 0px) var(--ll-fade-end, 150px);
-  }
-}
+/* Stikktittelen («Utstilling») fader ut med en gang man scroller, så den ikke blir med nedover. */
 @supports (animation-timeline: scroll()) {
   html.ll-event.ll-sticky .ll-sticky-h .hero__type-tag {
     animation: ll-sticky-out linear both;
