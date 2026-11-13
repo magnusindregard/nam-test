@@ -254,6 +254,28 @@
     });
   }
   document.addEventListener('DOMContentLoaded', function () { hydrated.then(convertLinks); });
+  // Pil-lenker som står til høyre (inntil høyrekanten av forelderen) bygger knappen mot venstre ved hover,
+  // så den ikke stikker ut av innholdsområdet
+  function markRightArrows() {
+    document.querySelectorAll('a.button--theme-arrow, a.button--theme-arrow__inverted, button.button--theme-arrow').forEach(function (a) {
+      var r = a.getBoundingClientRect();
+      if (!r.width) return;
+      // første forelder som er bredere enn lenken (forelderen kan selv være skjøvet til høyre med margin auto)
+      var box = a.parentElement;
+      while (box && box !== document.body && box.getBoundingClientRect().width < r.width + 40) box = box.parentElement;
+      var pr = box.getBoundingClientRect();
+      a.classList.toggle('ll-arrow-right', pr.right - r.right < 2 && r.left - pr.left > 40);
+    });
+  }
+  var rightT;
+  function markRightArrowsSoon() { clearTimeout(rightT); rightT = setTimeout(markRightArrows, 150); }
+  document.addEventListener('DOMContentLoaded', function () {
+    hydrated.then(function () {
+      markRightArrows();
+      new MutationObserver(markRightArrowsSoon).observe(document.body, { childList: true, subtree: true });
+    });
+  });
+  window.addEventListener('resize', markRightArrowsSoon);
   function setupReveal() {
     convertLinks();
     var logo = document.querySelector('.header__logo');
