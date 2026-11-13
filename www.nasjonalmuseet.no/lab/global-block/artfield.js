@@ -230,7 +230,15 @@
       }, { rootMargin: '0px 0px -15% 0px' });
       io.observe(root);
     });
-    Promise.all([shown, Promise.race([loaded, new Promise(function (r) { setTimeout(r, 1500); })])]).then(function () {
+    // Loader-lab skjuler siden til den er klar (html.ll-loading) – vent til den vises, ellers er animasjonen
+    // ferdig før noen ser den
+    var pageShown = new Promise(function (r) {
+      var h = document.documentElement;
+      if (!h.classList.contains('ll-loading')) return r();
+      var mo = new MutationObserver(function () { if (!h.classList.contains('ll-loading')) { mo.disconnect(); setTimeout(r, 150); } });
+      mo.observe(h, { attributes: true, attributeFilter: ['class'] });
+    });
+    Promise.all([shown, pageShown, Promise.race([loaded, new Promise(function (r) { setTimeout(r, 1500); })])]).then(function () {
       root.classList.add('is-in');
       var first = pendingShow.splice(0).sort(function (a, b) { return a.getBoundingClientRect().left - b.getBoundingClientRect().left; });
       first.forEach(function (el, i) { reveal(el, i * 90); });

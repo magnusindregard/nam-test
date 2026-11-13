@@ -1,11 +1,11 @@
 /* ===== Kunstverk-flate («Global block» / samlingstopp) =====
    Verk spredt på en flate som kan dras/sveipes sidelengs og går i ring (verkene gjentas).
-   Hvert verk driver litt for seg selv, påvirkes av musepekeren og zoomer litt ved hover.
+   Hvert verk driver litt for seg selv, påvirkes av musepekeren og blir litt større ved hover.
    --u (én Figma-piksel i px) settes i JS ut fra flatens størrelse. */
 .af {
   --af-ease: cubic-bezier(.2, .7, .2, 1);
   --af-drift: 8;            /* px, egen bevegelse */
-  --af-hover-zoom: 1.04;
+  --af-hover-scale: 1.06;
   --af-info-delay: 1s;      /* info-versjonen: hvor lenge man holder over før tittel/kunstner vises */
   --af-frame-ease: cubic-bezier(.22, .8, .2, 1);
   position: relative; overflow: hidden;
@@ -22,7 +22,7 @@
   opacity: 0;
 }
 /* Innlasting per verk (.is-shown, JS): toner inn, rammen åpner seg (lenken skaleres opp og klipper) og bildet
-   zoomer ut. Zoomen ligger på transform, så hover-zoomen (scale) står fritt. */
+   zoomer ut (transform). Hover gjør hele verket større (scale på .af__drift). */
 .af__item.is-shown { opacity: 1; transition: opacity 600ms ease-out var(--d, 0ms); }
 .af__drift {
   display: block; width: 100%; height: 100%;
@@ -49,7 +49,9 @@
   transform: none;
   transition: scale 500ms var(--af-ease), transform 1.3s var(--af-frame-ease) var(--d, 0ms);
 }
-.af:not(.is-dragging) .af__link:is(:hover, :focus-visible) .af__img { scale: var(--af-hover-zoom); }
+/* Hover: hele verket blir litt større (ikke zoom inni rammen) */
+.af__drift { transition: scale 500ms var(--af-ease); }
+.af:not(.is-dragging) .af__item:has(.af__link:is(:hover, :focus-visible)) .af__drift { scale: var(--af-hover-scale); }
 .af__link:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
 
 /* Info-versjonen: tittel og kunstner under verket etter --af-info-delay hover */
