@@ -199,7 +199,7 @@ html.ll-loader-reveal .ll-lines .ll-wd.ll-in {
 }
 
 /* Kort på samme rad: ett og ett fra venstre (steg i JS), fade + litt nedenfra og opp */
-:root { --ll-row-shift: 24px; --ll-row-tilt: 2deg; --ll-row-duration: 700ms; }
+:root { --ll-row-shift: 24px; --ll-row-tilt: 0deg; --ll-row-duration: 700ms; }
 /* translate/rotate (ikke transform) – sidens egen transform (f.eks. en speilvendt pilknapp) blir stående.
    Elementer med egen transform (.ll-row-keep, JS) får ikke tilt, siden transform-origin ville flyttet dem. */
 html.ll-loader-reveal .ll-r.ll-row { translate: 0 var(--ll-row-shift); }
@@ -447,24 +447,24 @@ html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__
   html.ll-parallax .promotion-block__image .responsive-image__image { animation: none; scale: 1; }
 }
 
-/* ---------- Mørk bakgrunn ovenfra (?wipe=on|off) ----------
+/* ---------- Mørk bakgrunn toner inn (?wipe=on|off) ----------
    De mørke flatene (.ll-wipe) er gjennomsiktige mens det pågår. Bak alt innhold ligger ett lag (.ll-wipe-layer,
-   fixed, z-index -1 – tegnes under blokkenes bakgrunn) i den mørke fargen, som skaleres ned ovenfra.
+   fixed, z-index -1 – tegnes under blokkenes bakgrunn) i den mørke fargen, som toner inn (opacity).
    Bare transform (GPU) – den gamle varianten tegnet store bakgrunner på nytt og regnet ut stiler hver frame. */
 :root { --ll-wipe-dur: 700ms; --ll-wipe-ease: cubic-bezier(.65, .05, .36, 1); }
 html.ll-loader-reveal .ll-wipe { background-color: transparent !important; }
 .ll-wipe-layer {
   position: fixed; left: 0; right: 0; z-index: -1; pointer-events: none;
-  transform-origin: 50% 0; transform: scaleY(0); will-change: transform;
+  opacity: 0; will-change: opacity;
 }
 html.ll-wipe-run .ll-wipe-layer { animation: ll-wipe-layer var(--ll-wipe-dur) var(--ll-wipe-ease) both; }
 /* Posisjonerte mørke flater (f.eks. svart bak forsidevideoen) fyller seg selv med et ::before-lag */
 html.ll-loader-reveal .ll-wipe-self::before {
   content: ""; position: absolute; inset: 0; pointer-events: none; background: var(--ll-wipe-c);
-  transform-origin: 50% 0; transform: scaleY(0); will-change: transform;
+  opacity: 0; will-change: opacity;
 }
 html.ll-wipe-run .ll-wipe-self::before { animation: ll-wipe-layer var(--ll-wipe-dur) var(--ll-wipe-ease) both; }
-@keyframes ll-wipe-layer { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes ll-wipe-layer { from { opacity: 0; } to { opacity: 1; } }
 /* Bilde/video-bakgrunner (forsidevideoen): et dekklag i sidens farge krymper mot bunnen, så videoen kommer
    til syne ovenfra. transform (ikke clip-path) så nettleseren kan gjøre det på GPU-en uten å male videoen på nytt. */
 html.ll-loader-reveal .ll-wipe-media::after {
@@ -569,7 +569,7 @@ html.ll-menu-wipe .menu-new__curtain--leave-active .menu__wrapper { opacity: 0; 
 :root { --ll-hero-zoom: 1.15; --ll-hero-inset: 6; --ll-hero-dur: 1400ms; --ll-hero-ease: cubic-bezier(.22, .8, .2, 1);
         --ll-hero-frame: calc(1 - var(--ll-hero-inset) * .02); }
 /* (egne selektorer, ikke :is – :is tar spesifisiteten til den mest spesifikke og ville slått start-reglene) */
-html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r picture,
+html.ll-loader-reveal.ll-hero-img.ll-exhibition .event-page .hero__media figure.ll-r picture,
 html.ll-loader-reveal.ll-hero-img .ll-hero-frame {
   display: block; overflow: hidden; scale: var(--ll-hero-frame);
 }
@@ -600,19 +600,19 @@ html.ll-loader-reveal.ll-hero-img .block-banner__background::after { opacity: 0;
 html.ll-loader-reveal.ll-hero-img.ll-hero-go .block-banner__background::after {
   opacity: 1; transition-delay: calc(var(--ll-hero-dur) * .55); /* ellers en grå kant rundt rammen mens den vokser */
 }
-html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r img,
+html.ll-loader-reveal.ll-hero-img.ll-exhibition .event-page .hero__media figure.ll-r img,
 html.ll-loader-reveal.ll-hero-img .ll-hero-frame video {
   scale: calc(var(--ll-hero-zoom) / var(--ll-hero-frame));
 }
-html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r :is(.responsive-image__image, picture, img) { transition-delay: inherit; }
-html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r.ll-in picture {
+html.ll-loader-reveal.ll-hero-img.ll-exhibition .event-page .hero__media figure.ll-r :is(.responsive-image__image, picture, img) { transition-delay: inherit; }
+html.ll-loader-reveal.ll-hero-img.ll-exhibition .event-page .hero__media figure.ll-r.ll-in picture {
   scale: 1; transition-property: scale; transition-duration: var(--ll-hero-dur); transition-timing-function: var(--ll-hero-ease);
 }
 html.ll-loader-reveal.ll-hero-img.ll-hero-go .ll-hero-frame {
   scale: 1; opacity: 1; transition-property: scale, opacity; transition-duration: var(--ll-hero-dur), 400ms;
   transition-timing-function: var(--ll-hero-ease), ease-out;
 }
-html.ll-loader-reveal.ll-hero-img .event-page .hero__media figure.ll-r.ll-in img,
+html.ll-loader-reveal.ll-hero-img.ll-exhibition .event-page .hero__media figure.ll-r.ll-in img,
 html.ll-loader-reveal.ll-hero-img.ll-hero-go .ll-hero-frame video {
   scale: 1; transition-property: opacity, scale; transition-duration: 500ms, var(--ll-hero-dur); transition-timing-function: ease, var(--ll-hero-ease);
 }

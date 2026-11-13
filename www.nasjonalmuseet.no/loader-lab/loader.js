@@ -23,6 +23,7 @@
 
   var hover = store.get('hover', 'zoom');
   html.classList.add('ll-loading', 'll-loader-' + loader, 'll-img-' + img, 'll-hover-' + hover);
+  if (/\/utstillinger\/\d{4}\//.test(location.pathname)) html.classList.add('ll-exhibition');
 
   /* --- av/på-valg som virker live (klasse på <html>) --- */
   var TOGGLES = [
@@ -31,7 +32,7 @@
     ['Bilde vokser', 'grow', 'll-grow'],
     ['Pil-lenke som knapp', 'arrowbtn', 'll-arrow-btn'],
     ['Parallax på promo-bilder', 'parallax', 'll-parallax'],
-    ['Mørk bakgrunn ovenfra', 'wipe', 'll-wipe-on'],
+    ['Mørk bakgrunn toner inn', 'wipe', 'll-wipe-on'],
     ['Stort bilde/video: zoom + ramme', 'heroimg', 'll-hero-img'],
     ['Utstilling: tittel-lockup', 'lockup', 'll-lockup'],
     ['Knapper: pil ved hover', 'btnarrow', 'll-btn-arrow-on'],
@@ -40,7 +41,7 @@
     ['Meny-bakgrunn ovenfra', 'menuwipe', 'll-menu-wipe']
   ];
   // Av som standard: valg som koster ytelse
-  var DEFAULT_OFF = { hscroll: 1 };
+  var DEFAULT_OFF = { hscroll: 1, sticky: 1, lockup: 1 };
   function isOn(t) { var v = store.get(t[1], DEFAULT_OFF[t[1]] ? 'off' : 'on'); return v !== 'off' && v !== 'none'; }
   TOGGLES.forEach(function (t) { html.classList.toggle(t[2], isOn(t)); });
 
@@ -49,7 +50,7 @@
     ['Innlasting', 'Start (ms)', '--ll-start', 500, 50, 'ms'],
     ['Innlasting', 'Steg per linje (ms)', '--ll-step', 120, 10, 'ms'],
     ['Innlasting', 'Steg per kort (ms)', '--ll-row-step', 160, 10, 'ms'],
-    ['Innlasting', 'Kort: tilt (grader)', '--ll-row-tilt', 2, 0.5, 'deg'],
+    ['Innlasting', 'Kort: tilt (grader)', '--ll-row-tilt', 0, 0.5, 'deg'],
     ['Innlasting', 'Kort: løft (px)', '--ll-row-shift', 24, 2, 'px'],
     ['Innlasting', 'Vertikal bevegelse (px)', '--ll-shift', 10, 2, 'px'],
     ['Innlasting', 'Liste-rader spredt (px)', '--ll-spread', 40, 5, 'px'],
@@ -410,12 +411,6 @@
      ovenfra og ned av én felles linje (--ll-wipe, 0 → 100vh), så de glir over i hverandre som én flate.
      Bare bakgrunnen animeres; etterpå får elementene tilbake sin egen bakgrunn. */
   var wipeEls = [], wipeLayer = null, wipeBox = { top: Infinity, bottom: 0 };
-  // Tid (0–1) da en cubic-bezier-kurve har nådd fremdrift p – til å vite når fyllingen passerer logoen
-  function bezierTimeFor(p, x1, y1, x2, y2) {
-    function b(t, a, c) { return 3 * a * t * (1 - t) * (1 - t) + 3 * c * t * t * (1 - t) + t * t * t; }
-    for (var s = 0; s <= 1; s += 0.005) if (b(s, y1, y2) >= p) return b(s, x1, x2);
-    return 1;
-  }
   function isDark(c) {
     var m = c.match(/[\d.]+/g);
     if (!m || (m.length > 3 && +m[3] === 0)) return false;
@@ -474,8 +469,8 @@
   function logoWhenReady() {
     var logo = document.querySelector('.header__logo'), l = logo && logo.getBoundingClientRect();
     if (!l || wipeBox.top > l.top || wipeBox.bottom < l.bottom) { html.classList.add('ll-logo-go'); return; }
-    var p = (l.bottom - wipeBox.top) / (Math.min(wipeBox.bottom, window.innerHeight) - wipeBox.top);
-    setTimeout(function () { html.classList.add('ll-logo-go'); }, num('--ll-wipe-dur') * bezierTimeFor(p, .65, .05, .36, 1));
+    // Bakgrunnen toner inn: logoen starter når den er godt synlig
+    setTimeout(function () { html.classList.add('ll-logo-go'); }, num('--ll-wipe-dur') * 0.6);
   }
   // Forsidevideo med ramme: logoen venter til rammen har vokst forbi den
   var heroFrame = null;
@@ -615,6 +610,8 @@
   var stickyUpdate = function () {};
   var scrollAnims = window.CSS && CSS.supports('animation-timeline: scroll()');
   function setupSticky() {
+    // Bare utstillinger (ikke omvisninger, arrangementer o.l.)
+    if (!/\/utstillinger\/\d{4}\//.test(location.pathname)) return;
     var hc = document.querySelector('.event-page .hero__heading-container');
     var media = hc && hc.parentElement.querySelector('.hero__media');
     if (!media) return;
