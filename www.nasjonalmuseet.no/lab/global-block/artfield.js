@@ -5,7 +5,6 @@
    Første skjermbilde er Figma-oppsettet. Etter det fylles flere kolonner med verk fra samlingen (API) – eller
    Figma-verkene om igjen – og flaten går i ring, så verkene gjentas i stedet for å være uendelige. */
 (function () {
-  var STEP = 343; // avstand mellom kolonnene i Figma
 
   // Figma-verkene (x, y, h i Figma-piksler; alle 200 brede). De to med inventarnummer er slått opp i samlingen.
   var KNOWN = {
@@ -64,6 +63,8 @@
   function mount(root, opts) {
     opts = opts || {};
     var layout = opts.layout || 'scatter', base = opts.base || '/lab/global-block/';
+    // Kolonneavstand: Figma (343) for scatter; tettere for stripa (opts.step, standard 270)
+    var STEP = layout === 'strip' ? (opts.step || 270) : 343, sx = STEP / 343;
     var field = document.createElement('div');
     field.className = 'af__field';
     root.insertBefore(field, root.firstChild);
@@ -71,7 +72,7 @@
 
     var figma = (layout === 'strip' ? STRIP : SCATTER).map(function (a) {
       var k = KNOWN[a.img] || {};
-      return { src: base + 'img/' + a.img + '.jpg', x: a.x, y: a.y, h: a.h, title: k.title, artist: k.artist, url: k.url || '/samlingen/' };
+      return { src: base + 'img/' + a.img + '.jpg', x: Math.round(a.x * sx), y: a.y, h: a.h, title: k.title, artist: k.artist, url: k.url || '/samlingen/' };
     });
     var pool = figma.map(function (f) { return { src: f.src, ratio: f.h / 200, title: f.title, artist: f.artist, url: f.url }; });
     var slots = [], L = 0, u = 1, offset = 0;
@@ -212,8 +213,8 @@
     }, { passive: false });
 
     measure();
-    // Figma-oppsettet sentreres i flaten: scatter-rammen er 1608 bred, strip-rutenettet 1915
-    offset = (root.clientWidth / u - (layout === 'strip' ? 1915 : 1608)) / 2;
+    // Figma-oppsettet sentreres i flaten: scatter-rammen er 1608 bred, stripa 6 kolonner
+    offset = (root.clientWidth / u - (layout === 'strip' ? 5 * STEP + 200 : 1608)) / 2;
     build();
     window.addEventListener('resize', function () { measure(); build(); });
 
