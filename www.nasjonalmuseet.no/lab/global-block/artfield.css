@@ -7,6 +7,7 @@
   --af-drift: 8;            /* px, egen bevegelse */
   --af-hover-zoom: 1.04;
   --af-info-delay: 1s;      /* info-versjonen: hvor lenge man holder over før tittel/kunstner vises */
+  --af-frame-ease: cubic-bezier(.22, .8, .2, 1);
   position: relative; overflow: hidden;
   touch-action: pan-y;      /* vertikal scroll går til siden, sidelengs sveip til flaten */
   cursor: grab; user-select: none; -webkit-user-select: none;
@@ -18,12 +19,11 @@
   position: absolute; left: 0; top: 0;
   width: calc(200 * var(--u)); height: calc(var(--h) * var(--u));
   will-change: translate;
-  opacity: 0; scale: .96;
+  opacity: 0;
 }
-.af.is-in .af__item {
-  opacity: 1; scale: 1;
-  transition: opacity 700ms ease-out calc(var(--i, 0) * 70ms), scale 900ms var(--af-ease) calc(var(--i, 0) * 70ms);
-}
+/* Innlasting per verk (.is-shown, JS): toner inn, rammen åpner seg (lenken skaleres opp og klipper) og bildet
+   zoomer ut. Zoomen ligger på transform, så hover-zoomen (scale) står fritt. */
+.af__item.is-shown { opacity: 1; transition: opacity 600ms ease-out var(--d, 0ms); }
 .af__drift {
   display: block; width: 100%; height: 100%;
   animation: af-drift var(--dur, 9s) ease-in-out var(--delay, 0s) infinite alternate;
@@ -34,11 +34,20 @@
   66%  { translate: calc(var(--af-drift) * -.8px) calc(var(--af-drift) * .4px); }
   100% { translate: calc(var(--af-drift) * .3px) calc(var(--af-drift) * .9px); }
 }
-.af__link { display: block; width: 100%; height: 100%; color: inherit; text-decoration: none; border: 0; cursor: pointer; }
+.af__link {
+  display: block; width: 100%; height: 100%; color: inherit; text-decoration: none; border: 0; cursor: pointer;
+  overflow: hidden; scale: var(--af-frame-from, .86);
+}
+.af__item.is-shown .af__link { scale: 1; transition: scale 1.3s var(--af-frame-ease) var(--d, 0ms); }
 .af.is-dragging .af__link { cursor: grabbing; }
 .af__img {
   display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none;
   -webkit-user-drag: none; transition: scale 500ms var(--af-ease);
+  transform: scale(var(--af-zoom-from, 1.25));
+}
+.af__item.is-shown .af__img {
+  transform: none;
+  transition: scale 500ms var(--af-ease), transform 1.3s var(--af-frame-ease) var(--d, 0ms);
 }
 .af:not(.is-dragging) .af__link:is(:hover, :focus-visible) .af__img { scale: var(--af-hover-zoom); }
 .af__link:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
@@ -62,4 +71,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .af__drift { animation: none; }
+  .af__link, .af__img { scale: 1; transform: none; }
 }

@@ -666,8 +666,10 @@ html.ll-event.ll-lockup .hero__media { padding-bottom: calc(var(--ll-grow-extra,
 .ll-gblock__btn:is(:hover, :focus-visible) svg { width: 32px; margin-left: 8px; opacity: 1; }
 
 /* ---------- Samlingstopp med stripe (?gtop=1), Figma 26425:191742 ----------
-   Stripe med verk (298 høy i Figma, skalerer med bredden) mellom header og tittel; ingress 22/32; «Søk på:». */
-.ll-gtop { height: calc(298 * 100vw / 1608); margin: 40px 0 8px; }
+   Stripe med verk mellom header og tittel (298 høy i Figma; her 360px / 30vh); ingress 22/32; «Søk på:». */
+/* 360px høy på desktop med god luft under; 30vh på mobil – verkene skaleres med høyden, så de blir store på mobil */
+.ll-gtop { height: 360px; margin: 40px 0 56px; }
+@media (max-width: 767px) { .ll-gtop { height: 30vh; margin: 24px 0 32px; } }
 html.ll-has-gtop .collection-start-page__description p { font-size: 22px !important; line-height: 32px !important; }
 html.ll-has-gtop .tabs__container { align-items: center; gap: 16px; }
 .ll-gtop-label { font-size: 18px; line-height: 26px; white-space: nowrap; }

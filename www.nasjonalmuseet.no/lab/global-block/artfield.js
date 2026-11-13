@@ -1,7 +1,7 @@
 /* Kunstverk-flate – se artfield.css.
    ArtField.mount(root, { layout: 'scatter' | 'strip', info: bool, api: bool, base: '/lab/global-block/' })
    - scatter: to rader rundt en tekst i midten (Figma «Global Block», 1608 × 900). --u = flatens høyde / 900.
-   - strip:   én rad (Figma samlingstopp, 298 høy). --u = flatens bredde / 1608.
+   - strip:   én rad (Figma samlingstopp, 298 høy). --u = flatens høyde / 298.
    Første skjermbilde er Figma-oppsettet. Etter det fylles flere kolonner med verk fra samlingen (API) – eller
    Figma-verkene om igjen – og flaten går i ring, så verkene gjentas i stedet for å være uendelige. */
 (function () {
@@ -31,27 +31,32 @@
 
   // Verk fra samlingen: bilde fra ms01 (IIIF), tittel og kunstner
   var apiCache = null;
+  // Bredden i samlingen: flere søk (maleri, skulptur, mote, smykker, grafisk design, keramikk, glass, design, bok),
+  // maks PER_QUERY fra hvert, flettet så like typer ikke havner ved siden av hverandre
+  var QUERIES = ['', 'munch', 'landskap', 'kjole', 'smykke', 'plakat', 'keramikk', 'glass', 'lampe', 'bok'], PER_QUERY = 8;
   function loadApi() {
     if (apiCache) return apiCache;
-    var queries = ['', 'munch', 'landskap'];
-    apiCache = Promise.all(queries.map(function (q) {
+    apiCache = Promise.all(QUERIES.map(function (q) {
       return fetch('/api/collectionsearch/search?lang=no&query=' + encodeURIComponent(q))
         .then(function (r) { return r.json(); }).catch(function () { return null; });
     })).then(function (res) {
-      var seen = {}, out = [];
-      res.forEach(function (d) {
+      var seen = {}, lists = res.map(function (d) {
+        var out = [];
         ((d && d.list && d.list.items) || []).forEach(function (it) {
           var m = it.media, im = m && m.images && m.images[0];
-          if (!im || seen[it.key]) return;
+          if (!im || seen[it.key] || out.length >= PER_QUERY) return;
           seen[it.key] = 1;
           var w = +im.dimensions.width, h = +im.dimensions.height;
           out.push({
-            src: m.iiifImageUrlTemplate.replace('{0}', im.originalFile).replace('{1}', '400').replace('{2}', ''),
+            src: m.iiifImageUrlTemplate.replace('{0}', im.originalFile).replace('{1}', '480').replace('{2}', ''),
             ratio: h / w, title: it.heading, artist: it.subHeading, url: it.url
           });
         });
+        return out;
       });
-      return out;
+      var mixed = [];
+      for (var i = 0; i < PER_QUERY; i++) lists.forEach(function (l) { if (l[i]) mixed.push(l[i]); });
+      return mixed;
     });
     return apiCache;
   }
@@ -69,8 +74,7 @@
       return { src: base + 'img/' + a.img + '.jpg', x: a.x, y: a.y, h: a.h, title: k.title, artist: k.artist, url: k.url || '/samlingen/' };
     });
     var pool = figma.map(function (f) { return { src: f.src, ratio: f.h / 200, title: f.title, artist: f.artist, url: f.url }; });
-    // strip: Figma-rutenettet (1915 bredt) er sentrert i rammen på 1608, så første verk står 153 til venstre
-    var slots = [], L = 0, u = 1, offset = layout === 'strip' ? -153 : 0;
+    var slots = [], L = 0, u = 1, offset = 0;
 
     function makeEl(s, i) {
       var el = document.createElement('div');
@@ -86,7 +90,23 @@
       // Dybde: høye verk ligger «nærmere» og flytter seg mer med musa
       s.depth = 0.35 + Math.min(1, Math.max(0, (s.h - 130) / 170)) * 0.65;
       field.appendChild(el);
+      if (itemIO) itemIO.observe(el); else el.classList.add('is-shown');
     }
+
+    var pendingShow = [];
+    function reveal(el, delay) {
+      if (el.__afShown) return; el.__afShown = 1;
+      var im = el.querySelector('img');
+      var go = function () { el.style.setProperty('--d', (delay || 0) + 'ms'); el.classList.add('is-shown'); };
+      if (im.complete) go(); else { im.addEventListener('load', go, { once: true }); im.addEventListener('error', go, { once: true }); }
+    }
+    var itemIO = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        itemIO.unobserve(e.target);
+        if (root.classList.contains('is-in')) reveal(e.target, 0); else pendingShow.push(e.target);
+      });
+    }, { root: root }) : null;
 
     // Bygg kolonnene: Figma-oppsettet først, så flere kolonner til flaten er bred nok (og alle verk i bassenget
     // er med). Deretter går den i ring.
@@ -101,12 +121,12 @@
       var firstCol = layout === 'strip' ? 6 : 5;   // scatter: nederste rad har en ledig kolonne 5
       var extra = layout === 'strip' ? pool.length : pool.length; // minst alle verk i bassenget én gang
       var gen = [], c = firstCol, k = 0;
-      function need() { return (c + 1) * STEP < viewUnits + 3 * STEP || k < extra; }
+      function need() { return (c + 1) * STEP < viewUnits + 4 * STEP || k < extra; }
       while (need()) {
         var rows = layout === 'strip' ? ['strip'] : (c === 5 ? ['bottom'] : ['top', 'bottom']);
         rows.forEach(function (row) {
           // ikke ett verk for mye i siste kolonne (da ville første verk havnet rett ved siden av seg selv i ringen)
-          if (k >= extra && (c + 1) * STEP >= viewUnits + 3 * STEP) return;
+          if (k >= extra && (c + 1) * STEP >= viewUnits + 4 * STEP) return;
           var p = pool[k % pool.length], h = Math.round(Math.min(300, Math.max(130, 200 * p.ratio)));
           var y = row === 'strip' ? Math.round(rnd(k + 1) * (298 - h))
                 : row === 'top' ? Math.round(30 + rnd(k + 1) * (430 - 30 - h))
@@ -123,30 +143,40 @@
     }
 
     function measure() {
-      u = layout === 'strip' ? root.clientWidth / 1608 : root.clientHeight / 900;
+      u = layout === 'strip' ? root.clientHeight / 298 : root.clientHeight / 900;
       root.style.setProperty('--u', u + 'px');
     }
 
     // Musepeker og dra/sveip
     var mx = 0, my = 0, tx = 0, ty = 0, vel = 0, dragging = false, down = null, moved = false, lastX = 0, lastT = 0, raf = 0;
-    var MOUSE = 36, left = layout === 'strip' ? -STEP : -STEP - 168;
+    // Ringen går fra «left» (godt utenfor venstre kant, også når oppsettet er sentrert) til left + L
+    var MOUSE = 36, left = -2 * STEP - 168;
     function render() {
       slots.forEach(function (s) {
         var x = mod(s.x + offset - left, L) + left;
         s.el.style.translate = ((x * u) + mx * s.depth).toFixed(1) + 'px ' + ((s.y * u) + my * s.depth).toFixed(1) + 'px';
       });
     }
-    function loop() {
+    // Automatisk bevegelse mot venstre (Figma-piksler per sekund). Bremser ned når man holder over et verk
+    // eller drar, og står stille når flaten ikke er synlig.
+    var AUTO = opts.auto == null ? 14 : opts.auto, autoV = 0, hoverArt = false, visible = false, lastFrame = 0;
+    function loop(t) {
       raf = 0;
+      var dt = lastFrame ? Math.min(64, t - lastFrame) / 1000 : 0; lastFrame = t;
       var nx = -tx * MOUSE, ny = -ty * MOUSE * 0.6, busy = false;
       mx += (nx - mx) * 0.06; my += (ny - my) * 0.06;
       if (Math.abs(nx - mx) > 0.05 || Math.abs(ny - my) > 0.05) busy = true;
       if (!dragging && Math.abs(vel) > 0.02) { offset += vel; vel *= 0.94; busy = true; }
+      var target = (reduce || dragging || hoverArt || !visible) ? 0 : AUTO;
+      autoV += (target - autoV) * 0.05;
+      if (Math.abs(autoV) > 0.01) { offset -= autoV * dt; busy = true; }
       render();
-      if (busy || dragging) raf = requestAnimationFrame(loop);
+      if (busy || dragging || (visible && AUTO && !reduce)) raf = requestAnimationFrame(loop); else lastFrame = 0;
     }
     function kick() { if (!raf) raf = requestAnimationFrame(loop); }
     var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    root.addEventListener('pointerover', function (e) { hoverArt = !!e.target.closest('.af__link'); });
+    root.addEventListener('pointerout', function (e) { if (!e.relatedTarget || !root.contains(e.relatedTarget)) hoverArt = false; });
 
     root.addEventListener('pointermove', function (e) {
       var r = root.getBoundingClientRect();
@@ -182,21 +212,27 @@
     }, { passive: false });
 
     measure();
-    // scatter: Figma-rammen (1608 bred) sentreres i flaten – på en lavere flate (forsiden) er det plass til flere kolonner
-    if (layout === 'scatter') offset = (root.clientWidth / u - 1608) / 2;
+    // Figma-oppsettet sentreres i flaten: scatter-rammen er 1608 bred, strip-rutenettet 1915
+    offset = (root.clientWidth / u - (layout === 'strip' ? 1915 : 1608)) / 2;
     build();
     window.addEventListener('resize', function () { measure(); build(); });
 
-    // Innlasting når flaten kommer til syne og Figma-bildene er lastet (maks 1,5 s)
+    // Innlasting: flaten starter når den kommer til syne og Figma-bildene er lastet (maks 1,5 s). Da kommer verkene
+    // i første skjermbilde inn ett og ett (ramme + zoom); senere får hvert verk samme animasjon når det glir inn.
     var imgs = slots.slice(0, figma.length).map(function (s) { return s.el.querySelector('img'); });
     var loaded = Promise.all(imgs.map(function (im) { return im.complete ? 1 : new Promise(function (r) { im.onload = im.onerror = r; }); }));
     var shown = new Promise(function (r) {
       if (!('IntersectionObserver' in window)) return r();
-      var io = new IntersectionObserver(function (es) { if (es.some(function (e) { return e.isIntersecting; })) { io.disconnect(); r(); } }, { rootMargin: '0px 0px -15% 0px' });
+      var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) { visible = e.isIntersecting; });
+        if (visible) { kick(); r(); }
+      }, { rootMargin: '0px 0px -15% 0px' });
       io.observe(root);
     });
     Promise.all([shown, Promise.race([loaded, new Promise(function (r) { setTimeout(r, 1500); })])]).then(function () {
-      requestAnimationFrame(function () { root.classList.add('is-in'); });
+      root.classList.add('is-in');
+      var first = pendingShow.splice(0).sort(function (a, b) { return a.getBoundingClientRect().left - b.getBoundingClientRect().left; });
+      first.forEach(function (el, i) { reveal(el, i * 90); });
     });
 
     // Flere verk fra samlingen
