@@ -451,7 +451,7 @@ html.ll-arrow-btn :is(a, button):is(.button--theme-arrow, .button--theme-arrow__
    De mørke flatene (.ll-wipe) er gjennomsiktige mens det pågår. Bak alt innhold ligger ett lag (.ll-wipe-layer,
    fixed, z-index -1 – tegnes under blokkenes bakgrunn) i den mørke fargen, som toner inn (opacity).
    Bare transform (GPU) – den gamle varianten tegnet store bakgrunner på nytt og regnet ut stiler hver frame. */
-:root { --ll-wipe-dur: 700ms; --ll-wipe-ease: cubic-bezier(.65, .05, .36, 1); }
+:root { --ll-wipe-dur: 350ms; --ll-wipe-ease: cubic-bezier(.65, .05, .36, 1); }
 html.ll-loader-reveal .ll-wipe { background-color: transparent !important; }
 .ll-wipe-layer {
   position: fixed; left: 0; right: 0; z-index: -1; pointer-events: none;

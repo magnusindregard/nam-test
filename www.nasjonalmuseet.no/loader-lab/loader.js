@@ -69,7 +69,7 @@
     ['Hover', 'Pil sprett (px)', '--ll-arrow-shift', 4, 1, 'px'],
     ['Hover', 'Pil avstand (px)', '--ll-arrow-gap', 12, 1, 'px'],
     ['Parallax', 'Styrke (%)', '--ll-parallax', 25, 1, ''],
-    ['Bakgrunn', 'Ovenfra-tid (ms)', '--ll-wipe-dur', 700, 50, 'ms'],
+    ['Bakgrunn', 'Fade-tid (ms)', '--ll-wipe-dur', 350, 50, 'ms'],
     ['Stort bilde', 'Zoom fra', '--ll-hero-zoom', 1.15, 0.01, ''],
     ['Stort bilde', 'Ramme fra (% inn)', '--ll-hero-inset', 6, 1, ''],
     ['Stort bilde', 'Tid (ms)', '--ll-hero-dur', 1400, 100, 'ms'],
