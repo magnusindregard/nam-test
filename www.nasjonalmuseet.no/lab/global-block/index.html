@@ -4,181 +4,46 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Global block – 57 000 kunstverk</title>
+<link rel="stylesheet" href="artfield.css">
 <style>
-  /* Figma: «Global Block» (24285:122234), 1608 × 900. Plassering og størrelser er regnet om til andeler
-     av bredden (1608), så blokken skalerer med vinduet. */
+  /* Figma: «Global Block» (24285:122234), 1608 × 900 – skalerer med bredden */
   @font-face {
     font-family: "MuseetSansVF-lab";
     src: url(/dist/fonts/MuseetSansTextVFfd038091f5fd9cc2.woff2) format("woff2");
     font-weight: 300 900; font-display: block;
     ascent-override: 100.4%; descent-override: 18.8%; line-gap-override: 0%;
   }
-  :root {
-    --u: calc(100vw / 1608);              /* én Figma-piksel */
-    --ease: cubic-bezier(.2, .7, .2, 1);
-    --drift: 8;                           /* px, egen bevegelse */
-    --mouse: 36;                          /* px, største forskyvning fra musa */
-    --hover-zoom: 1.04;
-    --info-delay: 1s;                     /* testversjon: hvor lenge man må holde over før tittel/kunstner vises */
-  }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: #fff; color: #000; font-family: "MuseetSansVF-lab", sans-serif; }
-
-  .gb { position: relative; height: calc(900 * var(--u)); overflow: hidden; }
-  .gb__art {
-    position: absolute; left: calc(var(--x) * var(--u)); top: calc(var(--y) * var(--u));
-    width: calc(200 * var(--u)); height: calc(var(--h) * var(--u));
-    /* musepeker (JS) */
-    translate: calc(var(--mx, 0) * 1px) calc(var(--my, 0) * 1px);
-  }
-  .gb__drift {
-    display: block; width: 100%; height: 100%;
-    animation: gb-drift var(--dur, 9s) ease-in-out var(--delay, 0s) infinite alternate;
-  }
-  @keyframes gb-drift {
-    0%   { translate: 0 0; }
-    33%  { translate: calc(var(--drift) * .6px) calc(var(--drift) * -1px); }
-    66%  { translate: calc(var(--drift) * -.8px) calc(var(--drift) * .4px); }
-    100% { translate: calc(var(--drift) * .3px) calc(var(--drift) * .9px); }
-  }
-  .gb__link { display: block; width: 100%; height: 100%; color: inherit; text-decoration: none; cursor: pointer; }
-  .gb__img {
-    display: block; width: 100%; height: 100%; object-fit: cover;
-    transition: scale 500ms var(--ease);
-  }
-  .gb__link:is(:hover, :focus-visible) .gb__img { scale: var(--hover-zoom); }
-  .gb__link:focus-visible { outline: 2px solid #000; outline-offset: 4px; }
-
-  /* Innlasting: verkene kommer inn ett og ett (rekkefølge i --i), litt mindre og nedenfra */
-  .gb__art { opacity: 0; scale: .96; }
-  .gb.is-in .gb__art {
-    opacity: 1; scale: 1;
-    transition: opacity 700ms ease-out calc(var(--i) * 70ms), scale 900ms var(--ease) calc(var(--i) * 70ms);
-  }
-
-  /* Tekst over verkene; slipper musa gjennom til verkene bak, unntatt knappen */
-  .gb__text {
-    position: absolute; inset: 0; z-index: 2; pointer-events: none;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(64 * var(--u));
-  }
+  .gb { height: calc(900 * 100vw / 1608); }
+  .gb .af__text { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(64 * var(--u)); }
   .gb__title {
-    margin: 0; text-align: center; font-weight: 400;
+    margin: 0; text-align: center;
     font-size: calc(130 * var(--u)); line-height: calc(120 * var(--u)); letter-spacing: calc(-2.6 * var(--u));
+    opacity: 0; font-weight: 300;
   }
-  .gb__title { opacity: 0; font-weight: 300; }
-  .gb.is-in .gb__title { opacity: 1; font-weight: 400; transition: opacity 500ms ease-out 200ms, font-weight 1s var(--ease) 200ms; }
-
-  /* Knapp (Button/Large, Primary): sort, 50px høy, 24px luft, radius 4px, 18px tekst. Pil glir inn ved hover. */
+  .gb.is-in .gb__title { opacity: 1; font-weight: 400; transition: opacity 500ms ease-out 200ms, font-weight 1s var(--af-ease) 200ms; }
+  /* Knapp (Button/Large, Primary): sort, 50 høy, 24 luft, radius 4, 18px. Lang pil glir inn ved hover. */
   .gb__btn {
-    pointer-events: auto; display: inline-flex; align-items: center; gap: 0; height: 50px; padding: 0 24px;
-    border-radius: 4px; background: #000; color: #fff; text-decoration: none; font-size: 18px; line-height: 1;
+    display: inline-flex; align-items: center; height: 50px; padding: 0 24px; border-radius: 4px;
+    background: #000; color: #fff; text-decoration: none; font-size: 18px; line-height: 1;
     opacity: 0; transition: opacity 500ms ease-out 500ms;
   }
   .gb.is-in .gb__btn { opacity: 1; }
-  .gb__btn svg { width: 0; margin-left: 0; opacity: 0; flex-shrink: 0; transition: width 300ms var(--ease), margin 300ms var(--ease), opacity 300ms; }
+  .gb__btn svg { width: 0; margin-left: 0; opacity: 0; flex-shrink: 0; transition: width 300ms var(--af-ease), margin 300ms var(--af-ease), opacity 300ms; }
   .gb__btn:is(:hover, :focus-visible) svg { width: 32px; margin-left: 8px; opacity: 1; }
-
-  /* Testversjon (?info=1): tittel og kunstner under verket etter --info-delay hover */
-  /* Verket blir liggende under den store tittelen; teksten får hvit bakgrunn så den er lesbar uansett */
-  .gb__info {
-    position: absolute; left: 0; top: 100%; width: max-content; max-width: calc(260 * var(--u) + 60px);
-    margin-top: 8px; padding: 4px 6px 5px; background: #fff; font-size: 14px; line-height: 1.3; pointer-events: none;
-    opacity: 0; translate: 0 -4px; transition: opacity 200ms ease-out, translate 200ms ease-out;
-  }
-  .gb__info b { display: block; font-weight: 500; }
-  .gb--info .gb__art:hover .gb__info {
-    opacity: 1; translate: 0 0;
-    transition: opacity 400ms ease-out var(--info-delay), translate 400ms var(--ease) var(--info-delay);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .gb__drift { animation: none; }
-    .gb__art { translate: none !important; }
-  }
 </style>
 </head>
 <body>
 <section class="gb" id="gb" aria-label="57 000 kunstverk">
-  <div class="gb__text">
+  <div class="af__text">
     <h2 class="gb__title">57 000<br>kunstverk</h2>
     <a class="gb__btn" href="/samlingen/">Utforsk samlingen<svg viewBox="0 0 31 12" height="12" fill="none" aria-hidden="true"><path d="M0 5.33333L28.4167 5.33333L23.25 0L25.1875 0L31 6L25.1875 12H23.25L28.4167 6.66667L0 6.66667L0 5.33333Z" fill="currentColor"/></svg></a>
   </div>
 </section>
-
+<script src="artfield.js"></script>
 <script>
-(function () {
-  // Verkene: plassering og høyde fra Figma (x, y, h i Figma-piksler; alle er 200 brede).
-  // title/artist brukes i testversjonen – de to med inventarnummer er slått opp i samlingen, resten må fylles inn.
-  var ART = [
-    { img: '113130',         x: 1204, y: 184, h: 168 },
-    { img: '104555',         x: 1547, y: 138, h: 263 },
-    { img: '111252',         x: -168, y: 187, h: 165 },
-    { img: '64930',          x: 631,  y: 543, h: 229 },
-    { img: '61717',          x: 971,  y: 674, h: 134 },
-    { img: 'NMK.2020.0391',  x: 518,  y: 93,  h: 130, title: 'Hus for en ung kvinne VI', artist: 'Beate Hølmebakk', id: 'NMK.2020.0391' },
-    { img: 'MS-02579-1988',  x: 861,  y: 38,  h: 298, title: 'Vintersol', artist: 'Gunnar S. Gundersen', id: 'MS-02579-1988' },
-    { img: '115722',         x: 175,  y: 123, h: 293 },
-    { img: '06830',          x: 1311, y: 505, h: 301 },
-    { img: '19729',          x: 291,  y: 656, h: 170 },
-    { img: '113126',         x: -49,  y: 552, h: 208 }
-  ];
-  var gb = document.getElementById('gb');
-  var info = /[?&]info=1/.test(location.search);
-  if (info) gb.classList.add('gb--info');
-
-  // Innlastingsrekkefølge: ovenfra og ned, venstre mot høyre
-  var order = ART.map(function (a, i) { return i; }).sort(function (a, b) { return (ART[a].y - ART[b].y) || (ART[a].x - ART[b].x); });
-
-  var items = ART.map(function (a, i) {
-    var el = document.createElement('div');
-    el.className = 'gb__art';
-    // Dybde: store verk ligger «nærmere» og flytter seg mer med musa
-    a.depth = 0.35 + (a.h - 130) / (301 - 130) * 0.65;
-    el.style.cssText = '--x:' + a.x + ';--y:' + a.y + ';--h:' + a.h + ';--i:' + order.indexOf(i) +
-      ';--dur:' + (7 + (i * 1.7) % 5).toFixed(1) + 's;--delay:-' + (i * 1.3 % 6).toFixed(1) + 's';
-    var label = (a.title || 'Tittel på verket') + ', ' + (a.artist || 'Kunstnernavn');
-    el.innerHTML = '<div class="gb__drift"><a class="gb__link" href="' + (a.id ? '/samlingen/objekt/' + a.id : '/samlingen/') +
-      '" aria-label="' + label + '"><img class="gb__img" src="img/' + a.img + '.jpg" alt=""></a>' +
-      (info ? '<div class="gb__info"><b>' + (a.title || 'Tittel på verket') + '</b>' + (a.artist || 'Kunstnernavn') + '</div>' : '') +
-      '</div>';
-    gb.insertBefore(el, gb.firstChild);
-    return { el: el, a: a, x: 0, y: 0 };
-  });
-
-  // Start når bildene er lastet (maks 1,5 s), så de kommer inn jevnt
-  var imgs = [].slice.call(gb.querySelectorAll('img'));
-  var loaded = Promise.all(imgs.map(function (im) {
-    return im.complete ? 1 : new Promise(function (r) { im.onload = im.onerror = r; });
-  }));
-  var fonts = document.fonts ? document.fonts.load('400 1em "MuseetSansVF-lab"') : Promise.resolve();
-  Promise.race([Promise.all([loaded, fonts]), new Promise(function (r) { setTimeout(r, 1500); })]).then(function () {
-    requestAnimationFrame(function () { gb.classList.add('is-in'); });
-  });
-
-  // Musepeker: verkene glir mykt mot en forskyvning ut fra hvor musa er i blokken (lerp hver frame)
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  var tx = 0, ty = 0, running = false;
-  var max = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--mouse')) || 36;
-  gb.addEventListener('pointermove', function (e) {
-    var r = gb.getBoundingClientRect();
-    tx = ((e.clientX - r.left) / r.width - 0.5) * 2;   // -1 … 1
-    ty = ((e.clientY - r.top) / r.height - 0.5) * 2;
-    if (!running) { running = true; requestAnimationFrame(tick); }
-  });
-  gb.addEventListener('pointerleave', function () { tx = ty = 0; if (!running) { running = true; requestAnimationFrame(tick); } });
-  function tick() {
-    var moving = false;
-    items.forEach(function (it) {
-      // motsatt retning av musa, som om man ser «forbi» verkene
-      var gx = -tx * max * it.a.depth, gy = -ty * max * 0.6 * it.a.depth;
-      it.x += (gx - it.x) * 0.06; it.y += (gy - it.y) * 0.06;
-      if (Math.abs(gx - it.x) > 0.05 || Math.abs(gy - it.y) > 0.05) moving = true;
-      it.el.style.setProperty('--mx', it.x.toFixed(2));
-      it.el.style.setProperty('--my', it.y.toFixed(2));
-    });
-    if (moving) requestAnimationFrame(tick); else running = false;
-  }
-})();
+  ArtField.mount(document.getElementById('gb'), { layout: 'scatter', info: /[?&]info=1/.test(location.search) });
 </script>
 </body>
 </html>

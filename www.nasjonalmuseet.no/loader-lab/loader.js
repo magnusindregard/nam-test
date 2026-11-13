@@ -123,6 +123,7 @@
   // Står over tittelen, men skal inn rett etter at tittelen er på plass (ikke i vanlig topp-til-bunn-rekkefølge)
   var AFTER_TITLE_SEL = '.hero__type-tag';
   function isBlock(el) {
+    if (el.closest('[data-ll-skip]')) return false; // har sin egen innlasting (f.eks. kunstverk-flaten)
     if (el.matches(SEL)) return true;
     if (el.closest('svg') || /^(SCRIPT|STYLE|SOURCE|BR|TEMPLATE)$/.test(el.tagName)) return false;
     if ([].some.call(el.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim(); })) return true;
@@ -142,7 +143,7 @@
     // overskrifter i første skjermbilde (ved lasting); de som kommer inn ved scroll toner inn som resten.
     var hMin = num('--ll-h-min'), onlyFirst = !html.classList.contains('ll-h-scroll');
     hs.forEach(function (h) {
-      if (h.classList.contains('ll-h') || parseFloat(getComputedStyle(h).fontSize) < hMin) return;
+      if (h.classList.contains('ll-h') || h.closest('[data-ll-skip]') || parseFloat(getComputedStyle(h).fontSize) < hMin) return;
       if (onlyFirst && (revealStarted || h.getBoundingClientRect().top >= window.innerHeight)) return;
       var inner = h.querySelector('a, span');
       var src = inner && inner.textContent.trim() === h.textContent.trim() ? inner : h;
@@ -716,6 +717,52 @@
       }).observe(document.body, { childList: true, subtree: true });
     });
   });
+
+  /* --- kunstverk-flaten (lab/global-block) ---
+     ?gblock=1 på forsiden: «57 000 kunstverk» som egen blokk over første promo-blokk (samme høyde og tittelstørrelse).
+     ?gtop=1 på samlingen: stripe med verk over tittelen (Figma 26425:191742). ?info=1 viser tittel/kunstner ved hover. */
+  var AF_BASE = '/lab/global-block/';
+  function loadArtField(cb) {
+    if (window.ArtField) return cb();
+    var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = AF_BASE + 'artfield.css'; document.head.appendChild(l);
+    var sc = document.createElement('script'); sc.src = AF_BASE + 'artfield.js'; sc.onload = cb; document.head.appendChild(sc);
+  }
+  var ARROW_LONG = '<svg viewBox="0 0 31 12" height="12" fill="none" aria-hidden="true"><path d="M0 5.33333L28.4167 5.33333L23.25 0L25.1875 0L31 6L25.1875 12H23.25L28.4167 6.66667L0 6.66667L0 5.33333Z" fill="currentColor"/></svg>';
+  var afInfo = q.get('info') === '1';
+  if (q.get('gblock') === '1' && location.pathname === '/') {
+    html.classList.add('ll-has-gblock');
+    document.addEventListener('DOMContentLoaded', function () { hydrated.then(function () {
+      var area = document.querySelector('.start-page__content-area .content-area-vue');
+      if (!area) return;
+      var item = document.createElement('div');
+      item.className = 'content-area-vue__item content-area-vue__item--white ll-gblock';
+      item.setAttribute('data-ll-skip', '');
+      item.innerHTML = '<section class="ll-gblock__field" aria-label="57 000 kunstverk"><div class="af__text">' +
+        '<h2 class="ll-gblock__title">57 000<br>kunstverk</h2>' +
+        '<a class="ll-gblock__btn" href="/samlingen/">Utforsk samlingen' + ARROW_LONG + '</a></div></section>';
+      area.insertBefore(item, area.firstChild);
+      loadArtField(function () { ArtField.mount(item.querySelector('.ll-gblock__field'), { layout: 'scatter', info: afInfo, base: AF_BASE }); });
+    }); });
+  }
+  if (q.get('gtop') === '1' && /^\/samlingen\/?$/.test(location.pathname)) {
+    html.classList.add('ll-has-gtop');
+    document.addEventListener('DOMContentLoaded', function () {
+      hydrated.then(function () {
+        var page = document.querySelector('.collection-start-page');
+        if (!page) return;
+        var strip = document.createElement('div');
+        strip.className = 'll-gtop';
+        strip.setAttribute('data-ll-skip', '');
+        page.insertBefore(strip, page.firstChild);
+        var tabs = page.querySelector('.tabs__container');
+        if (tabs && !tabs.querySelector('.ll-gtop-label')) {
+          var lab = document.createElement('span'); lab.className = 'll-gtop-label'; lab.textContent = 'Søk på:';
+          tabs.insertBefore(lab, tabs.firstChild);
+        }
+        loadArtField(function () { ArtField.mount(strip, { layout: 'strip', info: afInfo, base: AF_BASE }); });
+      });
+    });
+  }
 
   /* --- bilde-effekter --- */
   function track(im) {
