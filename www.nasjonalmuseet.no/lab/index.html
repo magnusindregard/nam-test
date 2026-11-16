@@ -14,26 +14,29 @@
   .page a { font-size: 1.15rem; }
   .delays a { display: inline-block; margin-right: .75rem; font-size: .9rem; color: #555; }
   code { font-size: .85rem; color: #666; }
+  h2 { font-size: 1rem; margin: 2rem 0 .5rem; }
 </style>
 </head>
 <body>
 <h1>Loader lab</h1>
 <p class="sub">Lokale testsider for nasjonalmuseet.no</p>
 
+<h2>Vanlige sider</h2>
 <ul>
   <li class="page"><a href="/">Forside</a> <code>/</code></li>
   <li class="page"><a href="/samlingen/">Samlingen</a> <code>/samlingen/</code></li>
   <li class="page"><a href="/samlingen/objekt/NG.M.01387">Objektside</a> <code>/samlingen/objekt/NG.M.01387</code></li>
   <li class="page"><a href="/utstillinger-og-arrangementer/nasjonalmuseet/utstillinger/2027/frida-kahlo.-mellom-verdener/">Utstilling</a> <code>/utstillinger/2027/frida-kahlo…</code></li>
-  <li class="page"><a href="/utstillinger-og-arrangementer/nasjonalmuseet/utstillinger/2027/frida-kahlo.-mellom-verdener/?lockup=on&amp;sticky=on">Utstillingstopp med parallax på tittel</a> <code>?lockup=on&amp;sticky=on</code></li>
-  <li class="page"><a href="/lab/global-block/">Global block – 57 000 kunstverk</a> <code>/lab/global-block/</code></li>
-  <li class="page"><a href="/lab/global-block/?info=1">Global block – med tittel og kunstner ved hover</a> <code>?info=1</code></li>
-  <li class="page"><a href="/?gblock=1">Forside med kunstverk-blokk</a> <code>/?gblock=1</code></li>
-  <li class="page"><a href="/samlingen/?gtop=1">Samlingen med ny topp</a> <code>/samlingen/?gtop=1</code></li>
-  <li class="page"><a href="/samlingen/?gtop=1&amp;info=1">Samlingen med ny topp – tittel og kunstner ved hover</a> <code>?gtop=1&amp;info=1</code></li>
 </ul>
 
-<h2 style="font-size:1rem">Forsinkelse (lagres i cookie)</h2>
+<h2>Varianter</h2>
+<ul>
+  <li class="page"><a href="/?gblock=1">Forside med samlingen-block</a> <code>/?gblock=1</code></li>
+  <li class="page"><a href="/samlingen/?gtop=1">Samlingen med samlingen-block som topp</a> <code>/samlingen/?gtop=1</code></li>
+  <li class="page"><a href="/utstillinger-og-arrangementer/nasjonalmuseet/utstillinger/2027/frida-kahlo.-mellom-verdener/?lockup=on&amp;sticky=on">Utstillingstopp med parallax på tittel</a> <code>?lockup=on&amp;sticky=on</code></li>
+</ul>
+
+<h2>Forsinkelse (lagres i cookie)</h2>
 <p class="delays">
   <a href="?delay=0&amp;imgdelay=0">Ingen</a>
   <a href="?delay=800&amp;imgdelay=0">800 ms</a>

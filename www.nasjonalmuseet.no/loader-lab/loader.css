@@ -649,7 +649,11 @@ html.ll-event.ll-lockup .hero__media { padding-bottom: calc(var(--ll-grow-extra,
    til syne: verkene ett og ett, tittelen fra tynn til regular, så knappen. */
 .ll-gblock { padding-top: 104px; }
 .ll-gblock__field { height: 550px; width: 100vw; margin-left: calc(50% - 50vw); } /* full bredde – verkene går ut over kanten */
-@media (min-width: 768px) { .ll-gblock__field { height: 80vh; } } /* desktop: 80 % av skjermhøyden; verkene skaleres med */
+@media (min-width: 768px) {
+  .ll-gblock__field { height: 80vh; }
+  .ll-gblock .ll-gblock__title { font-size: 140px; line-height: 130px; letter-spacing: -2.8px; } /* desktop: mye større tittel */
+  .ll-gblock .ll-gblock__field .af__text { gap: 56px; }
+} /* desktop: 80 % av skjermhøyden; verkene skaleres med */
 .ll-gblock .af__text { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 40px; }
 .ll-gblock__title {
   margin: 0; text-align: center; color: #000;

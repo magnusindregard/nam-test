@@ -720,7 +720,7 @@
 
   /* --- kunstverk-flaten (lab/global-block) ---
      ?gblock=1 på forsiden: «57 000 kunstverk» som egen blokk under «Utvalgte arrangementer» (80vh på desktop).
-     ?gtop=1 på samlingen: stripe med verk over tittelen (Figma 26425:191742). ?info=1 viser tittel/kunstner ved hover. */
+     ?gtop=1 på samlingen: stripe med verk over tittelen (Figma 26425:191742). Tittel/kunstner ved hover (?info=0 slår av). Knappen på forsiden går til samlingen med ny topp. */
   var AF_BASE = '/lab/global-block/';
   function loadArtField(cb) {
     if (window.ArtField) return cb();
@@ -728,7 +728,8 @@
     var sc = document.createElement('script'); sc.src = AF_BASE + 'artfield.js'; sc.onload = cb; document.head.appendChild(sc);
   }
   var ARROW_LONG = '<svg viewBox="0 0 31 12" height="12" fill="none" aria-hidden="true"><path d="M0 5.33333L28.4167 5.33333L23.25 0L25.1875 0L31 6L25.1875 12H23.25L28.4167 6.66667L0 6.66667L0 5.33333Z" fill="currentColor"/></svg>';
-  var afInfo = q.get('info') === '1';
+  // Tittel og kunstner ved hover er på som standard (?info=0 slår av)
+  var afInfo = q.get('info') !== '0';
   if (q.get('gblock') === '1' && location.pathname === '/') {
     html.classList.add('ll-has-gblock');
     document.addEventListener('DOMContentLoaded', function () { hydrated.then(function () {
@@ -739,7 +740,7 @@
       item.setAttribute('data-ll-skip', '');
       item.innerHTML = '<section class="ll-gblock__field" aria-label="57 000 kunstverk"><div class="af__text">' +
         '<h2 class="ll-gblock__title">57 000<br>kunstverk</h2>' +
-        '<a class="ll-gblock__btn" href="/samlingen/">Utforsk samlingen' + ARROW_LONG + '</a></div></section>';
+        '<a class="ll-gblock__btn" href="/samlingen/?gtop=1">Utforsk samlingen' + ARROW_LONG + '</a></div></section>';
       // Under «Utvalgte arrangementer» (ellers øverst)
       var after = Array.prototype.find.call(area.querySelectorAll('.ulc__title'), function (h) { return /utvalgte arrangement/i.test(h.textContent); });
       after = after && after.closest('.content-area-vue__item');
