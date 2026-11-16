@@ -763,7 +763,7 @@
           var lab = document.createElement('span'); lab.className = 'll-gtop-label'; lab.textContent = 'Søk på:';
           tabs.insertBefore(lab, tabs.firstChild);
         }
-        loadArtField(function () { ArtField.mount(strip, { layout: 'strip', info: afInfo, base: AF_BASE }); });
+        loadArtField(function () { ArtField.mount(strip, { layout: 'strip', info: afInfo, base: AF_BASE, auto: 24 }) /* litt raskere enn standard (14) */; });
       });
     });
   }
