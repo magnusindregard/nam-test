@@ -719,7 +719,7 @@
   });
 
   /* --- kunstverk-flaten (lab/global-block) ---
-     ?gblock=1 på forsiden: «57 000 kunstverk» som egen blokk over første promo-blokk (samme høyde og tittelstørrelse).
+     ?gblock=1 på forsiden: «57 000 kunstverk» som egen blokk under «Utvalgte arrangementer» (80vh på desktop).
      ?gtop=1 på samlingen: stripe med verk over tittelen (Figma 26425:191742). ?info=1 viser tittel/kunstner ved hover. */
   var AF_BASE = '/lab/global-block/';
   function loadArtField(cb) {
@@ -740,7 +740,10 @@
       item.innerHTML = '<section class="ll-gblock__field" aria-label="57 000 kunstverk"><div class="af__text">' +
         '<h2 class="ll-gblock__title">57 000<br>kunstverk</h2>' +
         '<a class="ll-gblock__btn" href="/samlingen/">Utforsk samlingen' + ARROW_LONG + '</a></div></section>';
-      area.insertBefore(item, area.firstChild);
+      // Under «Utvalgte arrangementer» (ellers øverst)
+      var after = Array.prototype.find.call(area.querySelectorAll('.ulc__title'), function (h) { return /utvalgte arrangement/i.test(h.textContent); });
+      after = after && after.closest('.content-area-vue__item');
+      if (after) area.insertBefore(item, after.nextSibling); else area.insertBefore(item, area.firstChild);
       loadArtField(function () { ArtField.mount(item.querySelector('.ll-gblock__field'), { layout: 'scatter', info: afInfo, base: AF_BASE }); });
     }); });
   }

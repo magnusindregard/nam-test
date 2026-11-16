@@ -6,8 +6,18 @@
    Figma-verkene om igjen – og flaten går i ring, så verkene gjentas i stedet for å være uendelige. */
 (function () {
 
-  // Figma-verkene (x, y, h i Figma-piksler; alle 200 brede). De to med inventarnummer er slått opp i samlingen.
+  // Figma-verkene (x, y, h i Figma-piksler; alle 200 brede). Filnavnene er bildenes ID i samlingen (ms01),
+  // slått opp i samlingens API.
   var KNOWN = {
+    '111252': { title: 'Mor og datter', artist: 'Edvard Munch', url: '/samlingen/objekt/NG.M.00840' },
+    '115722': { title: 'Badende mann', artist: 'Edvard Munch', url: '/samlingen/objekt/NG.M.01699' },
+    '113130': { title: 'Måneskinn', artist: 'Edvard Munch', url: '/samlingen/objekt/NG.M.02815' },
+    '113126': { title: 'Måneskinn', artist: 'Edvard Munch', url: '/samlingen/objekt/NG.M.01914' },
+    '104555': { title: 'Komposisjon', artist: 'Gunnar S. Gundersen', url: '/samlingen/objekt/NG.K_H.1968.0055' },
+    '19729': { title: 'En hei, Nordland', artist: 'Jean Heiberg', url: '/samlingen/objekt/NG.M.02282' },
+    '61717': { title: 'Natt', artist: 'Hanne Borchgrevink', url: '/samlingen/objekt/NMK.2012.0254' },
+    '64930': { title: 'Anemone', artist: 'Kari Mølstad', url: '/samlingen/objekt/NMK.2013.0171' },
+    '06830': { title: 'Vase', artist: 'Hadeland Glassverk, Axel Enoch Boman', url: '/samlingen/objekt/NMK.2006.0026' },
     'NMK.2020.0391': { title: 'Hus for en ung kvinne VI', artist: 'Beate Hølmebakk', url: '/samlingen/objekt/NMK.2020.0391' },
     'MS-02579-1988': { title: 'Vintersol', artist: 'Gunnar S. Gundersen', url: '/samlingen/objekt/MS-02579-1988' }
   };

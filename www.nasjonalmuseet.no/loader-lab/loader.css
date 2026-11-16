@@ -645,10 +645,11 @@ html.ll-event.ll-lockup .hero__media { padding-bottom: calc(var(--ll-grow-extra,
 }
 
 /* ---------- Kunstverk-flaten på forsiden (?gblock=1) ----------
-   Som en promo-blokk: 104px luft over, 550px høy, tittel 72/80 (promo-overskriften). Innlasting når den kommer
+   Under «Utvalgte arrangementer»: 104px luft over, 80vh høy på desktop (550px på mobil), tittel 72/80 (promo-overskriften). Innlasting når den kommer
    til syne: verkene ett og ett, tittelen fra tynn til regular, så knappen. */
 .ll-gblock { padding-top: 104px; }
 .ll-gblock__field { height: 550px; width: 100vw; margin-left: calc(50% - 50vw); } /* full bredde – verkene går ut over kanten */
+@media (min-width: 768px) { .ll-gblock__field { height: 80vh; } } /* desktop: 80 % av skjermhøyden; verkene skaleres med */
 .ll-gblock .af__text { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 40px; }
 .ll-gblock__title {
   margin: 0; text-align: center; color: #000;
