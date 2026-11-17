@@ -512,6 +512,11 @@ html.ll-btn-arrow-on .button.ll-has-arrow:is(:hover, :focus-visible):not(:disabl
   border-color: var(--ll-btn-bd) !important; border-bottom: var(--ll-btn-bb) !important;
 }
 html.ll-btn-arrow-on .button:is(:hover, :focus-visible) > .ll-btn-arrow svg { opacity: 1; translate: none; }
+/* Les mer / Vis mindre (aria-expanded): liten pil ned som glir inn ovenfra; pil opp når teksten er åpen */
+html.ll-btn-arrow-on .ll-btn-arrow--v svg { translate: 0 -4px; transition: opacity var(--ll-btn-arrow-dur) ease, translate var(--ll-btn-arrow-dur) var(--ll-r-ease), rotate var(--ll-btn-arrow-dur) var(--ll-r-ease); }
+html.ll-btn-arrow-on .button[aria-expanded="true"] > .ll-btn-arrow--v svg { rotate: 180deg; translate: 0 4px; }
+html.ll-btn-arrow-on .button:is(:hover, :focus-visible) > .ll-btn-arrow--v { width: 14px; }
+html.ll-btn-arrow-on .button:is(:hover, :focus-visible) > .ll-btn-arrow--v svg { translate: none; }
 @media (prefers-reduced-motion: reduce) {
   html.ll-loader-reveal .ll-r, html.ll-loader-reveal .ll-wd { translate: none !important; }
 }

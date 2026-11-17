@@ -55,6 +55,8 @@
     ['Innlasting', 'Start (ms)', '--ll-start', 500, 50, 'ms'],
     ['Innlasting', 'Fart ved scroll: steg (ms)', '--ll-step', 100, 10, 'ms'],
     ['Innlasting', 'Kort i rad: steg (ms)', '--ll-row-step', 130, 10, 'ms'],
+    ['Innlasting', 'Avsnitt: linjer per bolk', '--ll-p-chunk', 3, 1, ''],
+    ['Innlasting', 'Avsnitt: steg per bolk (ms)', '--ll-p-step', 40, 10, 'ms'],
     ['Innlasting', 'Kort: tilt (grader)', '--ll-row-tilt', 0, 0.5, 'deg'],
     ['Innlasting', 'Kort: løft (px)', '--ll-row-shift', 24, 2, 'px'],
     ['Innlasting', 'Kort fra venstre (px)', '--ll-row-shift-x', 48, 4, 'px'],
@@ -446,10 +448,16 @@
         if (!smallRow) el.classList.add('ll-row-card');
       }
       if (el.__llWords) {
-        // Avsnitt: hver linje får sitt eget steg
+        // Avsnitt: linjene kommer i bolker (--ll-p-chunk linjer), med kort tid mellom bolkene (--ll-p-step).
+        // Bare starten av avsnittet tar et vanlig steg i køen, så lange tekster ikke bygger opp en lang kø.
         el.classList.add('ll-in');
-        var last = 0;
-        linesOf(el.__llWords).forEach(function (line) { reveal(line, last = slot(step)); });
+        var lines = linesOf(el.__llWords), chunk = Math.max(1, Math.round(num('--ll-p-chunk'))), pStep = num('--ll-p-step');
+        var start = slot(step), last = start;
+        for (var k = 0; k * chunk < lines.length; k++) {
+          last = start + k * pStep;
+          reveal([].concat.apply([], lines.slice(k * chunk, (k + 1) * chunk)), last);
+        }
+        nextSlot = Math.max(nextSlot, performance.now() + last + pStep);
         remember([el], last, false);
         return;
       }
@@ -756,6 +764,8 @@
      Bare knapper med tekst og uten eget ikon. */
   // Samme lange pil som «Se alle …»-lenkene (fill: currentColor, så den følger knappens tekstfarge)
   var ARROW_SVG = '<svg viewBox="0 0 31 12" width="32" height="12" fill="none" aria-hidden="true"><path d="M0 5.33333L28.4167 5.33333L23.25 0L25.1875 0L31 6L25.1875 12H23.25L28.4167 6.66667L0 6.66667L0 5.33333Z" fill="currentColor"/></svg>';
+  // Vis mer/Les mer – Vis mindre (knapper med aria-expanded): liten pil ned; snus opp når teksten er åpen (CSS)
+  var ARROW_DOWN_SVG = '<svg viewBox="0 0 12 14" width="12" height="14" fill="none" aria-hidden="true"><path d="M5.33 0h1.34v11.43L10.6 7.5v1.88L6 14 1.4 9.38V7.5l3.93 3.93z" fill="currentColor"/></svg>';
   function addArrows(root) {
     if (!root.querySelectorAll) return;
     var list = [].slice.call(root.querySelectorAll('.button'));
@@ -771,7 +781,9 @@
       b.style.setProperty('--ll-btn-bb', cs.borderBottomWidth + ' ' + cs.borderBottomStyle + ' ' + cs.borderBottomColor);
       b.classList.add('ll-has-arrow');
       var s = document.createElement('span');
-      s.className = 'll-btn-arrow'; s.setAttribute('aria-hidden', 'true'); s.innerHTML = ARROW_SVG;
+      var toggle = b.hasAttribute('aria-expanded');
+      s.className = 'll-btn-arrow' + (toggle ? ' ll-btn-arrow--v' : ''); s.setAttribute('aria-hidden', 'true');
+      s.innerHTML = toggle ? ARROW_DOWN_SVG : ARROW_SVG;
       b.appendChild(s);
     });
   }
