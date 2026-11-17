@@ -43,7 +43,8 @@
     ['Knapper: pil ved hover', 'btnarrow', 'll-btn-arrow-on'],
     ['Lister/meny: vekt ved hover', 'listw', 'll-list-wght'],
     ['Overskrifter: vekt også ved scroll', 'hscroll', 'll-h-scroll'],
-    ['Meny-bakgrunn ovenfra', 'menuwipe', 'll-menu-wipe']
+    ['Meny-bakgrunn ovenfra', 'menuwipe', 'll-menu-wipe'],
+    ['Meny: punkter i toppen toner ut/inn', 'navswap', 'll-nav-swap']
   ];
   // Av som standard: valg som koster ytelse
   var DEFAULT_OFF = { hscroll: 1, sticky: 1, lockup: 1 };
@@ -70,6 +71,8 @@
     ['Meny', 'Fade (ms)', '--ll-menu-dur', 250, 50, 'ms'],
     ['Meny', 'Vekt-tid (ms)', '--ll-menu-wght-dur', 900, 100, 'ms'],
     ['Meny', 'Bakgrunn (ms)', '--ll-menu-wipe-dur', 500, 50, 'ms'],
+    ['Meny', 'Punkter ut/inn: fade (ms)', '--ll-nav-dur', 250, 50, 'ms'],
+    ['Meny', 'Punkter inn: pause etter bakgrunn (ms)', '--ll-nav-delay', 120, 20, 'ms'],
     ['Hover', 'Zoom', '--ll-zoom', 1.05, 0.01, ''],
     ['Hover', 'Zoom-tid (ms)', '--ll-zoom-dur', 450, 50, 'ms'],
     ['Hover', 'Zoom små kort', '--ll-zoom-small', 1.08, 0.01, ''],
@@ -759,6 +762,54 @@
     window.addEventListener('resize', function () { stickyUpdate(); });
   }
   document.addEventListener('DOMContentLoaded', function () { hydrated.then(setupSticky); });
+
+  /* --- meny: punktene i toppen byttes ut når menyen åpnes/lukkes (Kjøp billetter, Søk ↔ Language) ---
+     De som forsvinner toner bare ut (Vue fjerner dem med en gang, så det er kopier med sidens beregnede stil som
+     toner ut). De nye toner inn når den sorte meny-bakgrunnen er tegnet (--ll-menu-wipe-dur), pluss en liten
+     pause (--ll-nav-delay). Menyknappen selv står i ro. */
+  var GHOST_SKIP = /^(transition|animation|visibility|opacity|position|transform|translate|rotate|scale|inset|top|left|right|bottom|z-index|pointer-events|will-change)/;
+  function ghostOf(el) {
+    var c = el.cloneNode(true), src = [el].concat([].slice.call(el.querySelectorAll('*'))), dst = [c].concat([].slice.call(c.querySelectorAll('*')));
+    src.forEach(function (s, i) {
+      var cs = getComputedStyle(s), d = dst[i];
+      d.removeAttribute('id'); d.removeAttribute('class');
+      for (var k = 0; k < cs.length; k++) if (!GHOST_SKIP.test(cs[k])) d.style.setProperty(cs[k], cs.getPropertyValue(cs[k]));
+    });
+    var r = el.getBoundingClientRect();
+    c.setAttribute('aria-hidden', 'true');
+    c.style.cssText += ';position:fixed;margin:0;left:' + r.left + 'px;top:' + r.top + 'px;width:' + r.width + 'px;height:' + r.height +
+      'px;z-index:2147483000;pointer-events:none;visibility:visible;opacity:1';
+    return c;
+  }
+  document.addEventListener('click', function (e) {
+    if (!html.classList.contains('ll-nav-swap') || !e.target.closest || !e.target.closest('.header .menu-toggle, .header__nav .menu-toggle')) return;
+    var nav = e.target.closest('.header__nav') || document.querySelector('.header__nav');
+    if (!nav || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var dur = num('--ll-nav-dur');
+    var inAt = (html.classList.contains('ll-menu-wipe') ? num('--ll-menu-wipe-dur') : 0) + num('--ll-nav-delay');
+    var items = function () { return [].filter.call(nav.children, function (li) { return li.matches('.header__nav-item') && !li.querySelector('.menu-toggle'); }); };
+    var old = items();
+    // Ut: kopier i samme posisjon, toner ut
+    old.forEach(function (li) {
+      var g = ghostOf(li);
+      document.body.appendChild(g);
+      var a = g.animate([{ opacity: 1 }, { opacity: 0 }], { duration: dur, easing: 'ease-out', fill: 'both' });
+      a.onfinish = function () { g.remove(); };
+    });
+    // Inn: de nye punktene toner inn når bakgrunnen er tegnet. Vue setter dem inn litt etter klikket, så lytt en stund.
+    var t0 = performance.now();
+    var mo = new MutationObserver(function () {
+      items().filter(function (li) { return old.indexOf(li) < 0 && !li.__llNavIn; })
+        .sort(function (a, b) { return a.getBoundingClientRect().left - b.getBoundingClientRect().left; })
+        .forEach(function (li) {
+          li.__llNavIn = 1;
+          var wait = Math.max(0, inAt - (performance.now() - t0));
+          li.animate([{ opacity: 0 }, { opacity: 1 }], { duration: dur, delay: wait, easing: 'ease-out', fill: 'backwards' });
+        });
+    });
+    mo.observe(nav, { childList: true });
+    setTimeout(function () { mo.disconnect(); }, 1000);
+  }, true);
 
   /* --- knapper med fyll: pil etter teksten ved hover (bredden animeres i CSS) ---
      Bare knapper med tekst og uten eget ikon. */
