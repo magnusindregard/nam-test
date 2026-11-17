@@ -209,6 +209,12 @@ html.ll-loader-reveal .ll-r.ll-row.ll-in {
   transition: opacity var(--ll-row-duration) ease-out, translate var(--ll-row-duration) var(--ll-r-ease),
               rotate var(--ll-row-duration) var(--ll-r-ease);
 }
+/* Retning «venstre» (panelet, html.ll-row-x): kortene glir inn fra venstre mot høyre i stedet for nedenfra.
+   Bare kort-rader (.ll-row-card), ikke rader med små knapper/faner. */
+:root { --ll-row-shift-x: 48px; }
+html.ll-loader-reveal.ll-row-x .ll-r.ll-row.ll-row-card { translate: calc(-1 * var(--ll-row-shift-x)) 0; }
+html.ll-loader-reveal.ll-row-x .ll-r.ll-row.ll-row-card.ll-in { translate: none; }
+@media (prefers-reduced-motion: reduce) { html.ll-loader-reveal.ll-row-x .ll-r.ll-row.ll-row-card { translate: none; } }
 
 html.ll-loader-reveal .ll-h {
   font-family: "MuseetSansVF-lab", sans-serif !important;
@@ -289,10 +295,17 @@ html.ll-hover-zoom :is(.ulc-item, .promo-card, .theme-card) img {
   transition: opacity 500ms ease, scale var(--ll-zoom-dur) var(--ll-zoom-ease) !important;
 }
 html.ll-hover-zoom :is(.ulc-item, .promo-card, .theme-card):is(:hover, :focus-visible) img { scale: var(--ll-zoom) !important; }
+/* Små kort (bildene i «Utforsk videre»-listene): liten zoom innenfor rammen ved hover, uansett hover-valg */
+:root { --ll-zoom-small: 1.08; }
+.category-list-block__product img {
+  transition: opacity 500ms ease, scale var(--ll-zoom-dur) var(--ll-zoom-ease) !important;
+}
+.category-list-block__product:is(:hover, :focus-visible) img { scale: var(--ll-zoom-small); }
 
 @media (prefers-reduced-motion: reduce) {
   html.ll-hover-tilt :is(.ulc-item, .promo-card, .theme-card):hover { translate: none; }
   html.ll-hover-zoom :is(.ulc-item, .promo-card, .theme-card):is(:hover, :focus-visible) img { scale: 1 !important; }
+  .category-list-block__product:is(:hover, :focus-visible) img { scale: 1; }
 }
 
 /* ---------- Meny (?menu=anim|none) ----------
@@ -678,3 +691,6 @@ html.ll-event.ll-lockup .hero__media { padding-bottom: calc(var(--ll-grow-extra,
 html.ll-has-gtop .collection-start-page__description p { font-size: 22px !important; line-height: 32px !important; }
 html.ll-has-gtop .tabs__container { align-items: center; gap: 16px; }
 .ll-gtop-label { font-size: 18px; line-height: 26px; white-space: nowrap; }
+
+/* Lab-panelet: de viktigste valgene øverst, resten under «Alle innstillinger» */
+#ll-panel .ll-more summary { cursor: pointer; margin: 8px 0 4px; opacity: .7; }

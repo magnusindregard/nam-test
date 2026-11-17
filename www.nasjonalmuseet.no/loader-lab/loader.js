@@ -22,6 +22,11 @@
   var html = document.documentElement;
 
   var hover = store.get('hover', 'zoom');
+  // Horisontale lister: «samtidig» = alle kortene toner inn samtidig (bevegelsen ett og ett), «sekvensiell» = ett og ett
+  function rowFade() { return store.get('rowfade', 'samtidig'); }
+  // Kort i rad: bevegelse nedenfra («opp») eller fra venstre («venstre»)
+  function rowDir() { return store.get('rowdir', 'opp'); }
+  html.classList.toggle('ll-row-x', rowDir() === 'venstre');
   html.classList.add('ll-loading', 'll-loader-' + loader, 'll-img-' + img, 'll-hover-' + hover);
   if (/\/utstillinger\/\d{4}\//.test(location.pathname)) html.classList.add('ll-exhibition');
 
@@ -48,10 +53,11 @@
   /* --- justerbare CSS-variabler (endres live fra panelet, huskes i localStorage) --- */
   var VARS = [
     ['Innlasting', 'Start (ms)', '--ll-start', 500, 50, 'ms'],
-    ['Innlasting', 'Steg per linje (ms)', '--ll-step', 120, 10, 'ms'],
-    ['Innlasting', 'Steg per kort (ms)', '--ll-row-step', 160, 10, 'ms'],
+    ['Innlasting', 'Fart ved scroll: steg (ms)', '--ll-step', 100, 10, 'ms'],
+    ['Innlasting', 'Kort i rad: steg (ms)', '--ll-row-step', 130, 10, 'ms'],
     ['Innlasting', 'Kort: tilt (grader)', '--ll-row-tilt', 0, 0.5, 'deg'],
     ['Innlasting', 'Kort: løft (px)', '--ll-row-shift', 24, 2, 'px'],
+    ['Innlasting', 'Kort fra venstre (px)', '--ll-row-shift-x', 48, 4, 'px'],
     ['Innlasting', 'Vertikal bevegelse (px)', '--ll-shift', 10, 2, 'px'],
     ['Innlasting', 'Liste-rader spredt (px)', '--ll-spread', 40, 5, 'px'],
     ['Innlasting', 'Linjer hvit → grå (ms)', '--ll-line-dur', 1200, 100, 'ms'],
@@ -64,6 +70,7 @@
     ['Meny', 'Bakgrunn (ms)', '--ll-menu-wipe-dur', 500, 50, 'ms'],
     ['Hover', 'Zoom', '--ll-zoom', 1.05, 0.01, ''],
     ['Hover', 'Zoom-tid (ms)', '--ll-zoom-dur', 450, 50, 'ms'],
+    ['Hover', 'Zoom små kort', '--ll-zoom-small', 1.08, 0.01, ''],
     ['Hover', 'Vekt-tid lister (ms)', '--ll-hw-dur', 300, 50, 'ms'],
     ['Hover', 'Pil-knapp fade (ms)', '--ll-pill-dur', 150, 25, 'ms'],
     ['Hover', 'Pil sprett (px)', '--ll-arrow-shift', 4, 1, 'px'],
@@ -80,6 +87,8 @@
     ['Sticky', 'Fader ved (% av bildet)', '--ll-sticky-stop', 45, 5, ''],
     ['Sticky', 'Fade-lengde (px scroll)', '--ll-fade-len', 100, 25, 'px']
   ];
+  // Vises øverst i panelet (resten ligger under «Alle innstillinger»)
+  var TOP_VARS = ['--ll-step', '--ll-row-step', '--ll-row-shift-x'];
   function varVal(v) { return store.get('v' + v[2], String(v[3])); }
   VARS.forEach(function (v) { html.style.setProperty(v[2], varVal(v) + v[5]); });
   if (q.get('headline')) html.classList.add('ll-headline');
@@ -107,7 +116,7 @@
   // Steg/start leses fra panelet (--ll-step, --ll-row-step, --ll-start). MAX_DELAY: lengste kø før noe vises.
   var MAX_DELAY = 2500, nextSlot = 0;
   function num(k) { for (var i = 0; i < VARS.length; i++) if (VARS[i][2] === k) return parseFloat(varVal(VARS[i])) || 0; return 0; }
-  var MENU_DELAY = 400, AFTER_TITLE = 300;
+  var MENU_DELAY = 400, AFTER_TITLE = 150;
   var io = null, revealStarted = false;
   function bgOf(el) {
     for (; el; el = el.parentElement) {
@@ -335,7 +344,7 @@
     return row.length > 1 ? row : [el];
   }
   // Klar = alle bildene i enheten er lastet (maks READY_TIMEOUT)
-  var READY_TIMEOUT = 2500;
+  var READY_TIMEOUT = 1800;
   // Kort utenfor skjermen sideveis (karuseller) lastes lazy først når man blar – ikke vent på dem
   function onScreenX(e) { var r = e.getBoundingClientRect(); return r.right > 0 && r.left < window.innerWidth; }
   // Sjekker på nytt hver 100 ms – Vue kan bytte ut <img>-noder underveis, så load-lyttere er ikke nok
@@ -369,11 +378,52 @@
     });
     if (!visible) { queued = []; nextSlot = Math.min(nextSlot, now); }
   }
-  function reveal(nodes, delay) {
+  // fadeAt: kort i en rad toner inn samtidig (opacity starter ved fadeAt), mens bevegelsen (resten av
+  // overgangene) kommer ett og ett. Opacity står først i alle rad-overgangene i loader.css.
+  function reveal(nodes, delay, fadeAt) {
     if (delay > 0) queued.push({ nodes: nodes, at: performance.now() + delay });
-    nodes.forEach(function (n) { n.style.transitionDelay = delay + 'ms'; });
+    nodes.forEach(function (n, i) {
+      n.style.transitionDelay = fadeAt != null && i === 0
+        ? fadeAt + 'ms, ' + delay + 'ms, ' + delay + 'ms, ' + delay + 'ms, ' + delay + 'ms'
+        : delay + 'ms';
+    });
     // en frame så .ll-row sin startposisjon er på plass før overgangen
     requestAnimationFrame(function () { nodes.forEach(function (n) { n.classList.add('ll-in'); }); });
+  }
+  /* Gruppering, så det som ligger over folden ikke blir en lang kø av små steg:
+     - ting på samme linje (samme topp) deler steg
+     - små elementer tett under hverandre (metadata, knapper, faner) deler steg
+     - rader med små elementer (faner, knapper, miniatyrer) kommer inn samtidig
+     - store bilder bruker ikke et steg i køen – de har sin egen animasjon og går parallelt med teksten */
+  var SMALL_H = 90, CLUSTER_GAP = 56, SAME_LINE = 24, BIG_MEDIA = 300;
+  var lastShown = null; // { top, bottom (sidekoordinater), at (tidspunkt), small }
+  function pageRect(els) {
+    var top = Infinity, bottom = -Infinity;
+    els.forEach(function (e) { var r = e.getBoundingClientRect(); top = Math.min(top, r.top); bottom = Math.max(bottom, r.bottom); });
+    return { top: top + window.scrollY, bottom: bottom + window.scrollY };
+  }
+  // Lave elementer uten overskrift/avsnitt: metadata-linjer, knapper, faner, søkefelt, miniatyrer
+  function isSmall(el) {
+    var r = el.getBoundingClientRect();
+    return r.height > 2 && r.height <= SMALL_H && !el.matches('h1, h2, h3, h4, p') && !el.querySelector('h1, h2, h3, h4, p');
+  }
+  function isBigMedia(el) {
+    var r = el.getBoundingClientRect();
+    return r.height >= BIG_MEDIA && (el.matches('img, picture, figure, video') || !!el.querySelector('img, picture, video')) &&
+      !el.querySelector('h1, h2, h3, h4, p');
+  }
+  // Tidspunkt (ms fra nå) å henge seg på forrige gruppe, eller null
+  function joinDelay(els, small, allowSameLine) {
+    var now = performance.now();
+    if (!lastShown || lastShown.at < now - 100) return null;
+    var r = pageRect(els);
+    var sameLine = allowSameLine && Math.abs(r.top - lastShown.top) < SAME_LINE;
+    var stacked = small && lastShown.small && r.top >= lastShown.top && r.top - lastShown.bottom < CLUSTER_GAP;
+    return sameLine || stacked ? Math.max(0, Math.round(lastShown.at - now)) : null;
+  }
+  function remember(els, d, small) {
+    var r = pageRect(els);
+    lastShown = { top: r.top, bottom: r.bottom, at: performance.now() + d, small: small };
   }
   function show(els) {
     var step = num('--ll-step'), rowStep = num('--ll-row-step');
@@ -381,21 +431,37 @@
     // Kort på samme rad: ett og ett, venstre først
     if (isRow) els = els.slice().sort(function (a, b) { return a.getBoundingClientRect().left - b.getBoundingClientRect().left; });
     var isTitle = false;
+    var small = els.every(isSmall);
+    var smallRow = isRow && small;
+    // Avsnitt (linje for linje) og sidetittelen henger seg ikke på noe; overskrifter kan dele linje med f.eks. pilknapper
+    var first = els[0];
+    var joined = first.__llWords || first.matches('h1') || first.querySelector('h1') ? null : joinDelay(els, small, true);
+    var rowStart = null;
     els.forEach(function (el, i) {
       var hs = [].slice.call(el.querySelectorAll('.ll-h'));
       if (el.classList.contains('ll-h')) hs.push(el);
       if (isRow) {
         if (getComputedStyle(el).transform !== 'none') el.classList.add('ll-row-keep');
         el.classList.add('ll-row');
+        if (!smallRow) el.classList.add('ll-row-card');
       }
       if (el.__llWords) {
         // Avsnitt: hver linje får sitt eget steg
         el.classList.add('ll-in');
-        linesOf(el.__llWords).forEach(function (line) { reveal(line, slot(step)); });
+        var last = 0;
+        linesOf(el.__llWords).forEach(function (line) { reveal(line, last = slot(step)); });
+        remember([el], last, false);
         return;
       }
-      var d = slot(isRow && i < els.length - 1 ? rowStep : step);
-      reveal([el].concat(hs), d);
+      var d;
+      if (i === 0 && joined != null) d = joined;
+      else if (smallRow && i > 0) d = rowStart;
+      else if (!isRow && isBigMedia(el)) d = Math.min(Math.max(0, Math.round(nextSlot - performance.now())), MAX_DELAY);
+      else d = slot(isRow && i < els.length - 1 ? rowStep : step);
+      if (i === 0) rowStart = d;
+      // Kort-rader: alle toner inn samtidig, bevegelsen oppover kommer ett og ett fra venstre
+      reveal([el].concat(hs), d, isRow && !smallRow && rowFade() === 'samtidig' ? rowStart : null);
+      if (i === els.length - 1 && !(!isRow && isBigMedia(el))) remember(els, rowStart, small);
       // Etter sidetittelen: lengre pause, så tittelen rekker å komme i gang før ingressen
       if (el.tagName === 'H1' || el.querySelector('h1')) {
         isTitle = true;
@@ -533,7 +599,7 @@
           group.forEach(function (g) { g.__lls = 1; io.unobserve(g); });
           whenReady(group, function () { show(group); });
         });
-    }, { rootMargin: '0px 0px -5% 0px' });
+    }, { rootMargin: '0px' }); // starter når elementet kommer inn (midt mellom -5 % og +5 %)
     if (!io) { els.forEach(function (el) { show([el]); }); return; }
     els.forEach(function (el) { io.observe(el); });
   }
@@ -768,9 +834,31 @@
     });
   }
 
+  /* --- forhåndslasting av bilder ---
+     - preconnect til bildeserveren (ms01), så første bilde ikke venter på DNS/TLS-oppkobling
+     - lazy-bilder starter nedlastingen 1,5 skjermhøyder før de kommer til syne (også sidelengs i karuseller),
+       i stedet for nettleserens egen, ofte for sene, grense
+     - bildene dekodes på forhånd (decode()), så de ikke tegnes hakkete i det de toner inn */
+  (function () {
+    var l = document.createElement('link'); l.rel = 'preconnect'; l.href = 'https://ms01.nasjonalmuseet.no';
+    document.head.appendChild(l);
+  })();
+  var preIO = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) {
+    es.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var im = e.target;
+      preIO.unobserve(im);
+      if (im.loading === 'lazy') im.loading = 'eager';
+      if (!im.decode) return;
+      var loaded = im.complete ? Promise.resolve() : new Promise(function (r) { im.addEventListener('load', r, { once: true }); });
+      loaded.then(function () { return im.decode(); }).catch(function () {});
+    });
+  }, { rootMargin: '150% 50% 150% 50%' }) : null;
+
   /* --- bilde-effekter --- */
   function track(im) {
     if (im.__ll) return; im.__ll = 1;
+    if (preIO) preIO.observe(im);
     im.classList.add('ll-img');
     var ok = function () { im.classList.add('ll-loaded'); };
     if (im.complete && im.naturalWidth) ok();
@@ -797,6 +885,11 @@
     if (store.get('min_panel', '') === '1') d.className = 'll-min';
     d.innerHTML =
       '<div class="ll-title">Loader lab <span id="ll-toggle">–</span></div>' +
+      TOP_VARS.map(function (k) { var i = VARS.findIndex(function (v) { return v[2] === k; }), v = VARS[i];
+        return '<label>' + v[1] + ' <input data-var="' + i + '" type="number" step="' + v[4] + '" value="' + varVal(v) + '"></label>'; }).join('') +
+      '<label>Horisontale lister: fade <select id="ll-rowfade">' + opt(['samtidig', 'sekvensiell'], rowFade()) + '</select></label>' +
+      '<label>Horisontale lister: retning <select id="ll-rowdir">' + opt(['opp', 'venstre'], rowDir()) + '</select></label>' +
+      '<details class="ll-more"' + (store.get('more', '') === '1' ? ' open' : '') + '><summary>Alle innstillinger</summary>' +
       '<label>Side-loader <select id="ll-loader">' + opt(['reveal', 'title', 'spinner', 'dots', 'bar', 'fade', 'curtain', 'weight', 'none'], loader) + '</select></label>' +
       '<label>Bilder <select id="ll-img-sel">' + opt(['fade', 'blur', 'skeleton', 'none'], img) + '</select></label>' +
       '<label>Hover <select id="ll-hover">' + opt(['zoom', 'tilt', 'tight', 'none'], hover) + '</select></label>' +
@@ -809,11 +902,16 @@
         return '<label>' + t[0] + ' <select data-toggle="' + i + '">' + opt(['on', 'off'], isOn(t) ? 'on' : 'off') + '</select></label>';
       }).join('') +
       VARS.map(function (v, i) {
+        if (TOP_VARS.indexOf(v[2]) >= 0) return '';
         var head = i === 0 || VARS[i - 1][0] !== v[0] ? '<div class="ll-sub">' + v[0] + '</div>' : '';
         return head + '<label>' + v[1] + ' <input data-var="' + i + '" type="number" step="' + v[4] + '" value="' + varVal(v) + '"></label>';
       }).join('') +
+      '</details>' +
       '<div class="ll-time" id="ll-time">laster…</div>';
     document.body.appendChild(d);
+    document.getElementById('ll-rowfade').onchange = function () { store.set('rowfade', this.value); };
+    document.getElementById('ll-rowdir').onchange = function () { store.set('rowdir', this.value); html.classList.toggle('ll-row-x', this.value === 'venstre'); };
+    d.querySelector('.ll-more').addEventListener('toggle', function () { store.set('more', this.open ? '1' : ''); });
     // Live-endringer: ingen omlasting
     d.querySelectorAll('[data-var]').forEach(function (inp) {
       inp.oninput = function () {
