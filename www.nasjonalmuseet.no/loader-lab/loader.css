@@ -240,6 +240,17 @@ html.ll-loader-reveal .header__logo svg g path {
 html.ll-logo-go.ll-loader-reveal .header__logo svg { opacity: 1; }
 html.ll-logo-go.ll-loader-reveal .header__logo svg g path { stroke-width: 0; }
 html.ll-logo-nostroke.ll-loader-reveal .header__logo svg g path { stroke-width: 0; transition: none; }
+/* Lottie-logo (?logolottie=on|off): sidens logo er skjult mens Lottie-logoen spilles (.ll-lottie), og kommer
+   ikke tilbake – siste bilde av Lottie-logoen blir stående. Den gamle strek-animasjonen brukes ikke da. */
+.ll-lottie { position: absolute; pointer-events: none; visibility: hidden; }
+.ll-lottie.ll-lottie-play { visibility: visible; animation: ll-lottie-in var(--ll-logo-fade, 200ms) ease-out both; }
+@keyframes ll-lottie-in { from { opacity: 0; } }   /* rask fade inn mens den vokser */
+.ll-lottie svg { display: block; width: 100% !important; height: 100% !important; opacity: 1 !important; }
+.ll-lottie svg path:not(mask path, clipPath path) { fill: currentColor; stroke: none !important; }
+/* Sidens logo er skjult så lenge Lottie-logoen ligger ved siden av den – siste bilde blir stående som logoen.
+   Lager siden en ny logo (etter at menyen har vært åpen), er det sidens egen som vises. */
+.header__logo :has(> .ll-lottie) > svg:not(.ll-lottie svg) { visibility: hidden !important; }
+html.ll-logo-lottie.ll-loader-reveal .header__logo svg g path { stroke-width: 0 !important; transition: none !important; }
 
 @media (prefers-reduced-motion: reduce) {
   html.ll-loader-reveal .ll-r, html.ll-loader-reveal .ll-h, html.ll-loader-reveal .ll-wd { transition-duration: 1ms; }
