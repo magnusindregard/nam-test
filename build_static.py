@@ -37,6 +37,16 @@ UPSTREAM_PREFIXES = ("cdn-cgi", "globalassets", "contentassets", "Resources")
 # fordi nasjonalmuseet.no ikke svarer på API-kall fra et annet domene (CORS).
 API_STUBS = {"/api/authentication/userinfo/": b'{"id":null,"roles":null,"at":null}'}
 
+LOGO_SELECTOR = ".header__logo a, a.footer-new__logo"
+# Logoen (i toppen og bunnen) går til laben i stedet for forsiden. Vue rendrer toppen i nettleseren,
+# så lenken settes både ved lasting og ved klikk.
+LOGO_SCRIPT = """<script>(function(){var s=%r,h=%r;
+function fix(){document.querySelectorAll(s).forEach(function(a){a.setAttribute('href',h)})}
+document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest(s);
+if(a){a.setAttribute('href',h)}},true);
+document.addEventListener('DOMContentLoaded',fix);window.addEventListener('load',fix)})();</script>
+"""
+
 BASE = OUT = None
 fetched = set()
 
@@ -152,7 +162,11 @@ def main():
         html = open(f, "rb").read()
         if rel == "/samlingen/index.html":
             html = serve.localize(html)  # som serve.py gjør for lokale sider utenfor /lab/
-        open(f, "w", encoding="utf-8").write(rewrite_html(html.decode("utf-8")))
+        html = rewrite_html(html.decode("utf-8"))
+        if not rel.startswith("/lab/"):
+            tag = LOGO_SCRIPT % (LOGO_SELECTOR, BASE + "/lab/")
+            html = re.sub(r"(<head[^>]*>)", lambda m: m.group(1) + "\n" + tag, html, count=1)
+        open(f, "w", encoding="utf-8").write(html)
     done = set()
     while True:  # gjentas til ingen nye JS/CSS-filer er lastet ned underveis
         todo = [os.path.join(d, f) for d, _, files in os.walk(OUT) for f in files
