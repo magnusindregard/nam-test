@@ -73,6 +73,7 @@
     ['Meny', 'Bakgrunn (ms)', '--ll-menu-wipe-dur', 500, 50, 'ms'],
     ['Meny', 'Punkter ut/inn: fade (ms)', '--ll-nav-dur', 250, 50, 'ms'],
     ['Meny', 'Punkter inn: pause etter bakgrunn (ms)', '--ll-nav-delay', 120, 20, 'ms'],
+    ['Meny', 'Menypunkter etter Language (ms)', '--ll-menu-after-top', 100, 20, 'ms'],
     ['Hover', 'Zoom', '--ll-zoom', 1.05, 0.01, ''],
     ['Hover', 'Zoom-tid (ms)', '--ll-zoom-dur', 450, 50, 'ms'],
     ['Hover', 'Zoom små kort', '--ll-zoom-small', 1.08, 0.01, ''],
@@ -917,11 +918,34 @@
       loaded.then(function () { return im.decode(); }).catch(function () {});
     });
   }, { rootMargin: '150% 50% 150% 50%' }) : null;
+  // Karuseller (horisontale kortrader): kortene utenfor skjermen sideveis klippes av karusellen, så de regnes som
+  // usynlige og ville først lastet når man blar. Når karusellen nærmer seg (1,5 skjermhøyder), lastes og dekodes
+  // alle bildene i den, så de er klare når man blar.
+  var CAROUSEL = '.ulc-carousel, .swiper, .category-list-block__swiper';
+  var carIO = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) {
+    es.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      carIO.unobserve(e.target);
+      e.target.__llCarLoaded = 1;
+      e.target.querySelectorAll('img').forEach(preloadImg);
+    });
+  }, { rootMargin: '150% 0px 150% 0px' }) : null;
+  function preloadImg(im) {
+    if (im.loading === 'lazy') im.loading = 'eager';
+    if (!im.decode) return;
+    var loaded = im.complete ? Promise.resolve() : new Promise(function (r) { im.addEventListener('load', r, { once: true }); });
+    loaded.then(function () { return im.decode(); }).catch(function () {});
+  }
 
   /* --- bilde-effekter --- */
   function track(im) {
     if (im.__ll) return; im.__ll = 1;
     if (preIO) preIO.observe(im);
+    var car = carIO && im.closest && im.closest(CAROUSEL);
+    if (car) {
+      if (car.__llCarLoaded) preloadImg(im);          // bilder Vue legger til senere i en karusell som alt er lastet
+      else if (!car.__llCarObs) { car.__llCarObs = 1; carIO.observe(car); }
+    }
     im.classList.add('ll-img');
     var ok = function () { im.classList.add('ll-loaded'); };
     if (im.complete && im.naturalWidth) ok();
