@@ -44,7 +44,8 @@
     ['Lister/meny: vekt ved hover', 'listw', 'll-list-wght'],
     ['Overskrifter: vekt også ved scroll', 'hscroll', 'll-h-scroll'],
     ['Meny-bakgrunn ovenfra', 'menuwipe', 'll-menu-wipe'],
-    ['Meny: punkter i toppen toner ut/inn', 'navswap', 'll-nav-swap']
+    ['Meny: punkter i toppen toner ut/inn', 'navswap', 'll-nav-swap'],
+    ['Logo: Lottie-animasjon', 'logolottie', 'll-logo-lottie-on']
   ];
   // Av som standard: valg som koster ytelse
   var DEFAULT_OFF = { hscroll: 1, sticky: 1, lockup: 1 };
@@ -83,6 +84,8 @@
     ['Hover', 'Pil avstand (px)', '--ll-arrow-gap', 12, 1, 'px'],
     ['Parallax', 'Styrke (%)', '--ll-parallax', 25, 1, ''],
     ['Bakgrunn', 'Fade-tid (ms)', '--ll-wipe-dur', 350, 50, 'ms'],
+    ['Logo', 'Lottie: fart (× original)', '--ll-logo-speed', 1, 0.1, ''],
+    ['Logo', 'Lottie: fade inn (ms)', '--ll-logo-fade', 200, 50, 'ms'],
     ['Stort bilde', 'Zoom fra', '--ll-hero-zoom', 1.15, 0.01, ''],
     ['Stort bilde', 'Ramme fra (% inn)', '--ll-hero-inset', 6, 1, ''],
     ['Stort bilde', 'Tid (ms)', '--ll-hero-dur', 1400, 100, 'ms'],
@@ -293,10 +296,91 @@
     });
   });
   window.addEventListener('resize', markRightArrowsSoon);
+  /* --- logo: Lottie-animasjon (lab/logo/logo.json, fra After Effects) ---
+     Logoen går fra tynn til full tykkelse med ekte mellomformer. Lottie-logoen legges nøyaktig oppå sidens egen
+     logo og spilles av når logoen ellers ville startet (.ll-logo-go: når bakgrunnen er på plass, på forsiden når
+     video-rammen har vokst forbi). Siste bilde blir stående som logoen (ingen bytting tilbake – logoene er ikke
+     tegnet helt likt, så det ga et lite hopp). Lager siden logoen på nytt (etter åpen meny), vises sidens egen. Fargen arves fra headeren (currentColor, som sidens logo); maskene beholder sine farger.
+     Lastes ikke avspilleren i tide, brukes den gamle animasjonen. */
+  var LOTTIE_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie_light.min.js';
+  var LOGO_JSON = '/lab/logo/logo.json', LOGO_END = 30; // bilde 30 = ferdig logo (resten av komposisjonen står stille)
+  // Den synlige logoen i komposisjonen (480 × 480) ved ferdig logo, målt ved å tegne bilde 30 og finne kantene
+  // (de umaskerte formene til a og m stikker langt utenfor). Legges på sidens synlige logo (0 0 81,8 102,9 i dens
+  // viewBox 0 0 82 103). Lottie-logoen er tegnet ca. 3 % smalere, så den strekkes litt i bredden for å treffe.
+  var LOGO_VIS = [64.75, 9.75, 357.75, 464.5], SITE_VIS = [0, 0, 81.8, 102.9];
+  var lottieLib = null;
+  function loadLottie() {
+    if (lottieLib) return lottieLib;
+    lottieLib = new Promise(function (resolve, reject) {
+      if (window.lottie) return resolve(window.lottie);
+      var sc = document.createElement('script'); sc.src = LOTTIE_SRC; sc.async = true;
+      sc.onload = function () { resolve(window.lottie); }; sc.onerror = reject;
+      document.head.appendChild(sc);
+    });
+    return lottieLib;
+  }
+  // Hent avspilleren og logofila tidlig (mens siden laster), så de er klare når logoen skal komme
+  var logoData = null;
+  if (loader === 'reveal' && store.get('logolottie', 'on') !== 'off' && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    loadLottie();
+    logoData = fetch(LOGO_JSON).then(function (r) { return r.json(); });
+  }
+  function setupLogoLottie(logo) {
+    if (!html.classList.contains('ll-logo-lottie-on') || !logo || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var svg = logo.querySelector('svg'), host = svg && svg.parentNode;
+    if (!svg || logo.querySelector('.ll-lottie')) return;
+    var box = document.createElement('div');
+    box.className = 'll-lottie'; box.setAttribute('aria-hidden', 'true');
+    if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+    // Boksen = sidens synlige logo i piksler (sidens svg skalerer viewBox-en med «meet», midtstilt)
+    function place() {
+      var r = svg.getBoundingClientRect(), h = host.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+      var k = Math.min(r.width / vb.width, r.height / vb.height);
+      var ox = (r.width - vb.width * k) / 2, oy = (r.height - vb.height * k) / 2;
+      box.style.left = (r.left - h.left + ox + SITE_VIS[0] * k) + 'px'; box.style.top = (r.top - h.top + oy + SITE_VIS[1] * k) + 'px';
+      box.style.width = SITE_VIS[2] * k + 'px'; box.style.height = SITE_VIS[3] * k + 'px';
+    }
+    place();
+    host.insertBefore(box, svg);
+    var anim = null, ready = false, played = false;
+    // Sidens logo holdes skjult fra start (også om .ll-logo-go kommer før Lottie er klar). Er Lottie ikke klar
+    // innen 2,5 s, slippes den gamle animasjonen til.
+    html.classList.add('ll-logo-lottie');
+    function fallback() { if (anim) anim.destroy(); box.remove(); html.classList.remove('ll-logo-lottie'); }
+    var giveUp = setTimeout(function () { if (!ready) fallback(); }, 2500);
+    Promise.all([loadLottie(), logoData || fetch(LOGO_JSON).then(function (r) { return r.json(); })]).then(function (res) {
+      if (!box.isConnected) return;
+      anim = res[0].loadAnimation({ container: box, renderer: 'svg', loop: false, autoplay: false, animationData: res[1],
+        rendererSettings: { preserveAspectRatio: 'none' } });
+      anim.addEventListener('DOMLoaded', function () {
+        if (!box.isConnected) return;
+        // Beskjær til den synlige logoen (komposisjonen har luft rundt)
+        anim.renderer.svgElement.setAttribute('viewBox', LOGO_VIS.join(' '));
+        anim.goToAndStop(0, true);
+        clearTimeout(giveUp);
+        ready = true;
+        if (html.classList.contains('ll-logo-go')) play();
+      });
+    }).catch(fallback);
+    function play() {
+      if (!ready || played) return;
+      played = true; place();
+      box.classList.add('ll-lottie-play');
+      anim.setSpeed(num('--ll-logo-speed') || 1);
+      // Ferdig: siste bilde blir stående som logoen (ingen bytting tilbake, så ikke noe hopp)
+      anim.addEventListener('complete', function () { html.classList.add('ll-logo-lottie-done'); });
+      anim.playSegments([0, LOGO_END], true);
+    }
+    // Logoen kan endre størrelse (mobil/desktop)
+    window.addEventListener('resize', function () { if (box.isConnected) place(); });
+    new MutationObserver(function () { if (html.classList.contains('ll-logo-go')) play(); })
+      .observe(html, { attributes: true, attributeFilter: ['class'] });
+  }
   function setupReveal() {
     convertLinks();
     var logo = document.querySelector('.header__logo');
     if (logo) html.style.setProperty('--ll-logo-bg', bgOf(logo));
+    setupLogoLottie(logo);
     setupWipe();
     document.querySelectorAll(ROOTS).forEach(tag);
     // Menypunktene i toppen: egen tur, kun fade (ikke via IntersectionObserver)
