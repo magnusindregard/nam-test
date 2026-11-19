@@ -27,6 +27,18 @@
   // Kort i rad: bevegelse nedenfra («opp») eller fra venstre («venstre»)
   function rowDir() { return store.get('rowdir', 'opp'); }
   html.classList.toggle('ll-row-x', rowDir() === 'venstre');
+  // Kort i rad: ease-out på bevegelsen (navn → cubic-bezier)
+  var ROW_EASES = {
+    'ingen (lineær)': 'linear',
+    'svak (sine)': 'cubic-bezier(.61, 1, .88, 1)',
+    'middels (quad)': 'cubic-bezier(.5, 1, .89, 1)',
+    'tydelig (cubic)': 'cubic-bezier(.33, 1, .68, 1)',
+    'sterk (quart)': 'cubic-bezier(.25, 1, .5, 1)',
+    'kraftig (quint)': 'cubic-bezier(.22, 1, .36, 1)',
+    'ekstrem (expo)': 'cubic-bezier(.16, 1, .3, 1)'
+  };
+  function rowEase() { var e = store.get('rowease', 'sterk (quart)'); return ROW_EASES[e] ? e : 'sterk (quart)'; }
+  html.style.setProperty('--ll-row-ease', ROW_EASES[rowEase()]);
   html.classList.add('ll-loading', 'll-loader-' + loader, 'll-img-' + img, 'll-hover-' + hover);
   if (/\/utstillinger\/\d{4}\//.test(location.pathname)) html.classList.add('ll-exhibition');
 
@@ -1060,6 +1072,7 @@
         return '<label>' + v[1] + ' <input data-var="' + i + '" type="number" step="' + v[4] + '" value="' + varVal(v) + '"></label>'; }).join('') +
       '<label>Horisontale lister: fade <select id="ll-rowfade">' + opt(['samtidig', 'sekvensiell'], rowFade()) + '</select></label>' +
       '<label>Horisontale lister: retning <select id="ll-rowdir">' + opt(['opp', 'venstre'], rowDir()) + '</select></label>' +
+      '<label>Horisontale lister: ease-out <select id="ll-rowease">' + opt(Object.keys(ROW_EASES), rowEase()) + '</select></label>' +
       '<details class="ll-more"' + (store.get('more', '') === '1' ? ' open' : '') + '><summary>Alle innstillinger</summary>' +
       '<label>Side-loader <select id="ll-loader">' + opt(['reveal', 'title', 'spinner', 'dots', 'bar', 'fade', 'curtain', 'weight', 'none'], loader) + '</select></label>' +
       '<label>Bilder <select id="ll-img-sel">' + opt(['fade', 'blur', 'skeleton', 'none'], img) + '</select></label>' +
@@ -1082,6 +1095,7 @@
     document.body.appendChild(d);
     document.getElementById('ll-rowfade').onchange = function () { store.set('rowfade', this.value); };
     document.getElementById('ll-rowdir').onchange = function () { store.set('rowdir', this.value); html.classList.toggle('ll-row-x', this.value === 'venstre'); };
+    document.getElementById('ll-rowease').onchange = function () { store.set('rowease', this.value); html.style.setProperty('--ll-row-ease', ROW_EASES[this.value]); };
     d.querySelector('.ll-more').addEventListener('toggle', function () { store.set('more', this.open ? '1' : ''); });
     // Live-endringer: ingen omlasting
     d.querySelectorAll('[data-var]').forEach(function (inp) {

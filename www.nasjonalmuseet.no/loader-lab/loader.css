@@ -204,10 +204,12 @@ html.ll-loader-reveal .ll-lines .ll-wd.ll-in {
    Elementer med egen transform (.ll-row-keep, JS) får ikke tilt, siden transform-origin ville flyttet dem. */
 html.ll-loader-reveal .ll-r.ll-row { translate: 0 var(--ll-row-shift); }
 html.ll-loader-reveal .ll-r.ll-row:not(.ll-row-keep) { rotate: var(--ll-row-tilt); transform-origin: 0 100%; }
+/* Ease-out for bevegelsen (panelet: «Horisontale lister: ease-out», settes i JS) */
+:root { --ll-row-ease: cubic-bezier(.25, 1, .5, 1); }
 html.ll-loader-reveal .ll-r.ll-row.ll-in {
   translate: none; rotate: none;
-  transition: opacity var(--ll-row-duration) ease-out, translate var(--ll-row-duration) var(--ll-r-ease),
-              rotate var(--ll-row-duration) var(--ll-r-ease);
+  transition: opacity var(--ll-row-duration) ease-out, translate var(--ll-row-duration) var(--ll-row-ease),
+              rotate var(--ll-row-duration) var(--ll-row-ease);
 }
 /* Retning «venstre» (panelet, html.ll-row-x): kortene glir inn fra venstre mot høyre i stedet for nedenfra.
    Bare kort-rader (.ll-row-card), ikke rader med små knapper/faner. */
@@ -272,7 +274,7 @@ html.ll-hover-tight :is(.ulc-item, .promo-card, .theme-card):hover img { scale: 
    translate (ikke transform) så det ikke kolliderer med reveal-animasjonen.
    Transition-listen tar med reveal sine egenskaper, siden den overstyrer den. */
 html.ll-hover-tilt :is(.ulc-item, .promo-card, .theme-card) {
-  transition: opacity var(--ll-row-duration) ease-out, rotate var(--ll-row-duration) var(--ll-r-ease),
+  transition: opacity var(--ll-row-duration) ease-out, rotate var(--ll-row-duration) var(--ll-row-ease),
               translate var(--ll-tilt-duration) var(--ll-tilt-ease) !important;
 }
 html.ll-hover-tilt :is(.ulc-item, .promo-card, .theme-card):hover { translate: 0 var(--ll-tilt-lift); }
@@ -284,7 +286,7 @@ html.ll-hover-tight :is(.ulc-item__image, .promo-card__image-wrapper, .theme-car
   clip-path: inset(0); transition: clip-path var(--ll-hover-duration) var(--ll-hover-ease);
 }
 html.ll-hover-tight .theme-card {
-  transition: opacity var(--ll-row-duration) ease-out, translate var(--ll-row-duration) var(--ll-r-ease), rotate var(--ll-row-duration) var(--ll-r-ease),
+  transition: opacity var(--ll-row-duration) ease-out, translate var(--ll-row-duration) var(--ll-row-ease), rotate var(--ll-row-duration) var(--ll-row-ease),
               clip-path var(--ll-hover-duration) var(--ll-hover-ease) !important;
 }
 html.ll-hover-tight :is(.ulc-item__image, .promo-card__image-wrapper, .promo-card__image, .theme-card__image) {
