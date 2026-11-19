@@ -7,6 +7,18 @@ uten cookie-banner, Google Tag Manager, HubSpot og Sentry.
     python3 serve.py
 Åpne http://localhost:8000/lab/ – lenker til forside, samlingen og en objektside
 
+### Sertifikatfeil på macOS
+
+Hvis en underside viser `502` og `CERTIFICATE_VERIFY_FAILED`, er det Python som
+ikke får kontrollert sertifikatet til nasjonalmuseet.no. Lokale filer kan fortsatt virke.
+Serveren bruker macOS' sertifikatfil (`/etc/ssl/cert.pem`) automatisk dersom Pythons
+standardlager er tomt. HTTPS-sertifikater og vertsnavn blir fortsatt kontrollert.
+
+For å rette sertifikatoppsettet for andre Python-programmer også, kan du kjøre
+`Install Certificates.command` i Python-mappen under Programmer (for eksempel
+`/Applications/Python 3.11/Install Certificates.command`). Start serveren på nytt etterpå.
+Egne sertifikatlagre angitt med `SSL_CERT_FILE` eller `SSL_CERT_DIR` overstyres ikke.
+
 ## Loader lab
 Panelet nede til høyre bytter animasjon og forsinkelse. Du kan også bruke URL-parametre:
 - `?loader=spinner|dots|bar|fade|curtain|none` – side-loader

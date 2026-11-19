@@ -13,7 +13,7 @@ og /_ms01/... videresendes til ms01.nasjonalmuseet.no (kunstverk-bildene).
 Forsinkelse kan også styres per sidevisning med ?delay=ms&imgdelay=ms i URL-en
 (lagres i en cookie så den gjelder for alle filene siden laster).
 """
-import argparse, http.server, mimetypes, os, re, socketserver, time, urllib.request, urllib.parse
+import argparse, http.server, mimetypes, os, re, socketserver, ssl, sys, time, urllib.request, urllib.parse
 from http.cookies import SimpleCookie
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "www.nasjonalmuseet.no")
@@ -23,6 +23,21 @@ IMG_EXT = (".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif", ".svg")
 ARGS = None
 PAGE_CACHE = {}  # undersider hentet fra nasjonalmuseet.no, så hver lasting tar like lang tid
 PAGE_TTL = 600   # sekunder – nasjonalmuseet.no publiserer nye bygg, og gammel HTML peker da på filer som er borte
+
+
+def upstream_ssl_context():
+    """Bruk macOS-sertifikater hvis Python-installasjonen mangler rotsertifikater."""
+    context = ssl.create_default_context()
+    # Python fra python.org kan mangle cert.pem før Install Certificates.command
+    # er kjørt. Behold eksplisitt konfigurerte sertifikatlagre uendret.
+    if (sys.platform == "darwin" and not context.cert_store_stats()["x509_ca"]
+            and not any(name in os.environ for name in ("SSL_CERT_FILE", "SSL_CERT_DIR"))
+            and os.path.isfile("/etc/ssl/cert.pem")):
+        context.load_verify_locations(cafile="/etc/ssl/cert.pem")
+    return context
+
+
+UPSTREAM_SSL_CONTEXT = upstream_ssl_context()
 
 LOADER_TAGS = b'<link rel="stylesheet" href="/loader-lab/loader.css">\n<script src="/loader-lab/loader.js"></script>\n'
 STRIP = [  # det samme som ble fjernet fra den lokale kopien av /samlingen/
@@ -129,7 +144,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 local-test",
                                                        "Accept": self.headers.get("Accept", "*/*")})
-            with urllib.request.urlopen(req, timeout=30) as r:
+            with urllib.request.urlopen(req, timeout=30, context=UPSTREAM_SSL_CONTEXT) as r:
                 body = r.read()
                 ctype = r.headers.get("Content-Type", mimetypes.guess_type(url)[0] or "application/octet-stream")
                 if ctype.startswith("text/html"):
