@@ -34,3 +34,15 @@ Serveren legger inn loader-lab, fjerner sporing og skriver om lenkene så du bli
 
 Egne animasjoner skrives i `www.nasjonalmuseet.no/loader-lab/loader.css` og `loader.js`.
 API-kall (/api/...) og kunstverk-bilder (ms01) hentes live fra nasjonalmuseet.no via serveren, så du må være på nett.
+
+## GitHub Pages
+`build_static.py` lager en statisk kopi av laben, siden GitHub Pages ikke kan kjøre `serve.py`:
+
+    python3 build_static.py --base /nam-test --out _site
+
+Den henter sidene som lenkes fra `/lab/` fra nasjonalmuseet.no, laster ned JS/CSS de trenger
+og skriver om stiene så alt virker under `/nam-test/`. Lenker til sider som ikke er med, går til
+nasjonalmuseet.no. `.github/workflows/pages.yml` kjører skriptet og publiserer ved hver push til `main`.
+
+Virker ikke statisk: `?delay=` og `?imgdelay=` (gjøres av serveren), og `/api/`-kall
+(nasjonalmuseet.no tillater dem ikke fra et annet domene). Legg til nye sider i `LIVE_PAGES`.
