@@ -23,9 +23,9 @@
 
   var hover = store.get('hover', 'zoom');
   // Horisontale lister: «samtidig» = alle kortene toner inn samtidig (bevegelsen ett og ett), «sekvensiell» = ett og ett
-  function rowFade() { return store.get('rowfade', 'samtidig'); }
+  function rowFade() { return store.get('rowfade', 'sekvensiell'); }
   // Kort i rad: bevegelse nedenfra («opp») eller fra venstre («venstre»)
-  function rowDir() { return store.get('rowdir', 'opp'); }
+  function rowDir() { return store.get('rowdir', 'venstre'); }
   html.classList.toggle('ll-row-x', rowDir() === 'venstre');
   // Kort i rad: ease-out på bevegelsen (navn → cubic-bezier)
   var ROW_EASES = {
